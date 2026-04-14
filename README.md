@@ -1,36 +1,198 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Dorm Exchange
 
-## Getting Started
+A dorm roommate communication platform — chat, proposals, voting, and shared agreements — all in one place.
 
-First, run the development server:
+## Features
+
+- Room-isolated chat with image sharing
+- Proposal creation, voting, and edit history
+- Active dorm agreements page
+- In-app notifications with unread badge
+- Profile menu with display name editing
+- Help center
+
+## Tech Stack
+
+- **Next.js 16** (App Router, TypeScript, React 19)
+- **Local SQLite mode** — zero config, runs entirely offline via `better-sqlite3`
+- **Supabase mode** — PostgreSQL + Auth + RLS for production deployment
+- **Tailwind CSS v4** — campus-style design system
+
+---
+
+## Quick Start — Local Mode (No Supabase, No Account Needed)
+
+> This is the recommended path for first-time setup and demos.
+
+### Prerequisites
+
+- **Node.js 20 or higher** — download from https://nodejs.org
+
+### Step 1 — Install dependencies
+
+Open a terminal in the project folder and run:
+
+```bash
+npm install
+```
+
+### Step 2 — Start the dev server in local mode
+
+```bash
+npm run dev:local
+```
+
+This command automatically sets the required environment variables for local SQLite mode. No `.env` file is needed.
+
+Open your browser at **http://localhost:3000**.
+
+### Step 3 — Seed demo data (optional but recommended)
+
+In a second terminal (while the dev server is running), run:
+
+```bash
+npm run seed:local
+```
+
+This creates three demo student accounts inside `data/local-demo.db`:
+
+| Email | Password | Display name |
+|---|---|---|
+| jordan@example.com | demo123456 | Jordan |
+| alex@example.com | demo123456 | Alex |
+| sam@example.com | demo123456 | Sam |
+
+All three accounts are already in the same dorm room. Invite code: **DORM42**
+
+To also add demo proposal edit history records:
+
+```bash
+npm run history:demo
+```
+
+### Step 4 — Sign in
+
+Go to http://localhost:3000/auth/login and sign in with any of the demo accounts above, or go to http://localhost:3000/auth/register to create your own account.
+
+---
+
+## Using the App
+
+| Page | How to get there |
+|---|---|
+| Chat | Home after login → dorm room chat |
+| New Proposal | "New Proposal" button in chat header |
+| Proposals | Click any proposal link in chat |
+| Agreements | "Agreements" button in chat header |
+| Notifications | "Notifications" badge in top-right bar |
+| Help | "Help" button in top-right bar |
+| Profile | Avatar button (initials) in top-right bar |
+
+### Key flows
+
+1. **Invite a roommate** — share the invite code shown in the chat header
+2. **Create a proposal** — fill in category, title, description, and details
+3. **Vote** — all room members vote; unanimous approval activates the proposal
+4. **Edit a proposal** — the proposer can edit pending or rejected proposals; votes reset automatically
+5. **Send an image** — click the image icon next to the chat input, choose a file (JPEG/PNG/GIF/WebP, max 5 MB), then Send
+
+---
+
+## Project Structure
+
+```
+src/
+  app/
+    api/          # API route handlers (messages, proposals, upload, profile …)
+    app/          # Authenticated app pages (chat, proposals, agreements …)
+    auth/         # Login / register pages
+    onboarding/   # Create or join a room
+  components/     # Shared React components
+  lib/
+    localdb/      # SQLite schema, session helpers
+    supabase/     # Supabase client helpers
+    domain/       # Shared business logic (proposal activation rules …)
+  types/          # Shared TypeScript types
+scripts/
+  seed-local-db.mjs        # One-command demo data seeder
+  add-demo-edit-history.mjs  # Adds extra edit history records for demos
+supabase/
+  migrations/    # SQL migrations for Supabase (production) mode
+```
+
+---
+
+## Supabase Mode (Production)
+
+Only needed if you want to deploy with a real database.
+
+### 1 — Create a Supabase project
+
+Go to https://supabase.com and create a free project.
+
+### 2 — Run migrations
+
+In the Supabase SQL editor, run these files in order:
+
+- `supabase/migrations/001_init.sql`
+- `supabase/migrations/002_rls.sql`
+- `supabase/migrations/003_proposal_edit_history.sql`
+- `supabase/migrations/004_messages_allow_image.sql`
+
+### 3 — Configure Auth
+
+In Supabase → Authentication → URL Configuration:
+
+- **Site URL**: `http://localhost:3000` (development) or your deployed URL
+- **Redirect URLs**: add `http://localhost:3000/auth/callback` and `https://<your-domain>/auth/callback`
+
+### 4 — Set environment variables
+
+Create a `.env.local` file in the project root:
+
+```bash
+USE_LOCAL_DB=false
+NEXT_PUBLIC_USE_LOCAL_DB=false
+NEXT_PUBLIC_SUPABASE_URL=https://<your-project>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
+SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+```
+
+### 5 — Start the dev server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Available Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | Description |
+|---|---|
+| `npm run dev:local` | Start dev server in local SQLite mode (no .env needed) |
+| `npm run dev` | Start dev server in Supabase mode (requires .env.local) |
+| `npm run seed:local` | Reset and seed demo data into local SQLite database |
+| `npm run history:demo` | Add demo proposal edit history records |
+| `npm run build:local` | Production build in local mode |
+| `npm run lint` | Run ESLint |
+6. Proposal auto-activates as agreement when all room members approved
+7. Check active agreements and notifications
 
-## Learn More
+## 4. Deploy to Vercel
 
-To learn more about Next.js, take a look at the following resources:
+1. Push repository to GitHub
+2. Import project in Vercel
+3. Set environment variables in Vercel Project Settings
+4. Redeploy
+5. Add Vercel domain to Supabase Auth Redirect URLs
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 5. Pre-Launch Checklist
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- RLS enabled on all tables
+- Test with at least 2 accounts in the same room
+- Confirm users cannot read/write other room data
+- Confirm proposal vote lifecycle works:
+	- pending -> active agreement
+- Confirm notifications can mark as read

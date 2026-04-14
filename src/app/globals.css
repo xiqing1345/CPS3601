@@ -1,8 +1,13 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #eef1f7;
+  --foreground: #1a2333;
+  --campus-navy: #16324f;
+  --campus-ink: #1f2f46;
+  --campus-gold: #d6a437;
+  --campus-paper: #fffdf8;
+  --campus-line: #d7dde8;
 }
 
 @theme inline {
@@ -12,15 +17,82 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+body {
+  position: relative;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), "Segoe UI", sans-serif;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(1100px 600px at 12% -10%, rgba(22, 50, 79, 0.13), transparent 60%),
+    radial-gradient(900px 500px at 92% 6%, rgba(214, 164, 55, 0.14), transparent 62%),
+    linear-gradient(180deg, rgba(255, 253, 248, 0.75) 0%, rgba(238, 241, 247, 0.96) 100%);
+}
+
+.campus-heading {
+  font-family: var(--font-libre-baskerville), Georgia, serif;
+  color: var(--campus-navy);
+  letter-spacing: 0.01em;
+}
+
+.campus-card {
+  border: 1px solid var(--campus-line);
+  background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+  box-shadow: 0 14px 34px rgba(23, 40, 64, 0.08);
+}
+
+.campus-paper-card {
+  border: 1px solid #e8ddc0;
+  background: var(--campus-paper);
+  box-shadow: 0 12px 28px rgba(40, 54, 80, 0.1);
+}
+
+.campus-btn-primary {
+  border: 1px solid #0f2942;
+  background: linear-gradient(180deg, #1b3b5e 0%, #143251 100%);
+  color: #ffffff;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.campus-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 16px rgba(20, 50, 81, 0.3);
+}
+
+.campus-btn-secondary {
+  border: 1px solid #c6cfdf;
+  background: #ffffff;
+  color: var(--campus-ink);
+}
+
+.campus-badge {
+  border: 1px solid rgba(214, 164, 55, 0.45);
+  background: rgba(214, 164, 55, 0.14);
+  color: #6f4f08;
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.loading-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  background: var(--campus-navy);
+  animation: pulse-dot 0.9s ease-in-out infinite;
 }

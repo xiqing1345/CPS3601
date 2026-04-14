@@ -4,17 +4,30 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:local": "cross-env USE_LOCAL_DB=true NEXT_PUBLIC_USE_LOCAL_DB=true NEXT_PUBLIC_SITE_URL=http://localhost:3000 next dev",
     "build": "next build",
+    "build:local": "cross-env USE_LOCAL_DB=true NEXT_PUBLIC_USE_LOCAL_DB=true NEXT_PUBLIC_SITE_URL=http://localhost:3000 next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed:local": "node scripts/seed-local-db.mjs",
+    "history:demo": "node scripts/add-demo-edit-history.mjs"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.10.0",
+    "@supabase/supabase-js": "^2.102.1",
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^12.8.0",
+    "clsx": "^2.1.1",
+    "cross-env": "^10.1.0",
+    "date-fns": "^4.1.0",
     "next": "16.2.2",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
