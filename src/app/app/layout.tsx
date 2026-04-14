@@ -4,6 +4,7 @@ import { isLocalMode } from "@/lib/localdb/mode";
 import { getLocalSessionUser } from "@/lib/localdb/session";
 import { getLocalDb } from "@/lib/localdb/db";
 import { AppTopBar } from "@/components/navigation/AppTopBar";
+import { AIAssistantPanel } from "@/components/ai/AIAssistantPanel";
 
 export default async function AppLayout({
   children,
@@ -30,6 +31,7 @@ export default async function AppLayout({
           displayName={user.display_name}
         />
         {children}
+        <AIAssistantPanel />
       </div>
     );
   }
@@ -65,6 +67,7 @@ export default async function AppLayout({
         displayName={profile?.display_name ?? user.user_metadata?.display_name ?? "Student"}
       />
       {children}
+      <AIAssistantPanel />
     </div>
   );
 }
