@@ -12,33 +12,41 @@ const DB_PATH = path.join(DB_DIR, "local-demo.db");
 let db: Database.Database | null = null;
 
 function ensureDemoSeed(database: Database.Database) {
-  const countRow = database.prepare("select count(*) as count from users").get() as { count: number };
-  if ((countRow.count ?? 0) > 0) {
-    return;
-  }
-
   const now = new Date();
   const ts = (mins: number) => new Date(now.getTime() + mins * 60 * 1000).toISOString();
-  const users = [
+  const demoUsers = [
     { id: "11111111-1111-4111-8111-111111111111", email: "jordan@example.com", displayName: "Jordan" },
     { id: "22222222-2222-4222-8222-222222222222", email: "alex@example.com", displayName: "Alex" },
     { id: "33333333-3333-4333-8333-333333333333", email: "sam@example.com", displayName: "Sam" },
   ];
 
-  const insertUser = database.prepare(
-    "insert into users (id, email, display_name, password_hash, created_at) values (?, ?, ?, ?, ?)",
-  );
+  const users = demoUsers.map((demo) => {
+    const existed = database
+      .prepare("select id from users where email = ?")
+      .get(demo.email) as { id: string } | undefined;
 
-  for (const user of users) {
-    insertUser.run(user.id, user.email, user.displayName, bcrypt.hashSync("demo123456", 10), ts(-120));
+    if (existed) {
+      return { ...demo, id: existed.id };
+    }
+
+    database
+      .prepare("insert into users (id, email, display_name, password_hash, created_at) values (?, ?, ?, ?, ?)")
+      .run(demo.id, demo.email, demo.displayName, bcrypt.hashSync("demo123456", 10), ts(-120));
+
+    return demo;
+  });
+
+  const demoRoom = database
+    .prepare("select id from rooms where invite_code = ?")
+    .get("DORM42") as { id: string } | undefined;
+  const roomId = demoRoom?.id ?? randomUUID();
+  if (!demoRoom) {
+    database
+      .prepare(
+        "insert into rooms (id, room_name, dorm_name, invite_code, created_by, created_at) values (?, ?, ?, ?, ?, ?)",
+      )
+      .run(roomId, "Room 402", "Maple Hall", "DORM42", users[0].id, ts(-90));
   }
-
-  const roomId = randomUUID();
-  database
-    .prepare(
-      "insert into rooms (id, room_name, dorm_name, invite_code, created_by, created_at) values (?, ?, ?, ?, ?, ?)",
-    )
-    .run(roomId, "Room 402", "Maple Hall", "DORM42", users[0].id, ts(-90));
 
   const insertMember = database.prepare(
     "insert into room_members (id, room_id, user_id, role, joined_at) values (?, ?, ?, ?, ?)",
@@ -47,43 +55,54 @@ function ensureDemoSeed(database: Database.Database) {
   insertMember.run(randomUUID(), roomId, users[1].id, "member", ts(-88));
   insertMember.run(randomUUID(), roomId, users[2].id, "member", ts(-87));
 
-  const proposalActiveId = randomUUID();
-  const proposalPendingId = randomUUID();
+  const activeProposal = database
+    .prepare("select id from proposals where room_id = ? and title = ?")
+    .get(roomId, "Weekly Chore Rotation") as { id: string } | undefined;
+  const pendingProposal = database
+    .prepare("select id from proposals where room_id = ? and title = ?")
+    .get(roomId, "Quiet Hours 11PM-7AM") as { id: string } | undefined;
 
-  database.prepare(
-    "insert into proposals (id, room_id, proposer_id, category, title, description, full_details, status, approval_rule, created_at, activated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-  ).run(
-    proposalActiveId,
-    roomId,
-    users[0].id,
-    "chores",
-    "Weekly Chore Rotation",
-    "Rotate shared cleaning tasks each week.",
-    "Every Sunday 20:00 we rotate chores among all roommates. Tasks include trash, floor, and bathroom.",
-    "active",
-    "all_members",
-    ts(-70),
-    ts(-60),
-  );
+  const proposalActiveId = activeProposal?.id ?? randomUUID();
+  const proposalPendingId = pendingProposal?.id ?? randomUUID();
 
-  database.prepare(
-    "insert into proposals (id, room_id, proposer_id, category, title, description, full_details, status, approval_rule, created_at, activated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-  ).run(
-    proposalPendingId,
-    roomId,
-    users[1].id,
-    "quiet_hours",
-    "Quiet Hours 11PM-7AM",
-    "Set standard quiet hours on weekdays.",
-    "From Monday to Thursday, keep music and speaker volume low between 23:00 and 07:00.",
-    "pending",
-    "all_members",
-    ts(-20),
-    null,
-  );
+  if (!activeProposal) {
+    database.prepare(
+      "insert into proposals (id, room_id, proposer_id, category, title, description, full_details, status, approval_rule, created_at, activated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    ).run(
+      proposalActiveId,
+      roomId,
+      users[0].id,
+      "chores",
+      "Weekly Chore Rotation",
+      "Rotate shared cleaning tasks each week.",
+      "Every Sunday 20:00 we rotate chores among all roommates. Tasks include trash, floor, and bathroom.",
+      "active",
+      "all_members",
+      ts(-70),
+      ts(-60),
+    );
+  }
+
+  if (!pendingProposal) {
+    database.prepare(
+      "insert into proposals (id, room_id, proposer_id, category, title, description, full_details, status, approval_rule, created_at, activated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    ).run(
+      proposalPendingId,
+      roomId,
+      users[1].id,
+      "quiet_hours",
+      "Quiet Hours 11PM-7AM",
+      "Set standard quiet hours on weekdays.",
+      "From Monday to Thursday, keep music and speaker volume low between 23:00 and 07:00.",
+      "pending",
+      "all_members",
+      ts(-20),
+      null,
+    );
+  }
 
   const insertVote = database.prepare(
-    "insert into proposal_votes (id, proposal_id, voter_id, vote_type, comment, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?)",
+    "insert or ignore into proposal_votes (id, proposal_id, voter_id, vote_type, comment, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?)",
   );
 
   for (const user of users) {
@@ -93,7 +112,7 @@ function ensureDemoSeed(database: Database.Database) {
   insertVote.run(randomUUID(), proposalPendingId, users[2].id, "suggest_edit", "Can we make weekends flexible?", ts(-15), ts(-15));
 
   database.prepare(
-    "insert into agreements (id, proposal_id, room_id, category, title, details, proposer_id, active_since, is_active, approval_status, created_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    "insert or ignore into agreements (id, proposal_id, room_id, category, title, details, proposer_id, active_since, is_active, approval_status, created_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
   ).run(
     randomUUID(),
     proposalActiveId,
@@ -111,52 +130,72 @@ function ensureDemoSeed(database: Database.Database) {
   const insertMessage = database.prepare(
     "insert into messages (id, room_id, sender_id, content, message_type, proposal_id, created_at) values (?, ?, ?, ?, ?, ?, ?)",
   );
-  insertMessage.run(randomUUID(), roomId, users[0].id, "Hey team, we should formalize cleaning duties.", "user", null, ts(-75));
-  insertMessage.run(randomUUID(), roomId, users[0].id, "New proposal created: Weekly Chore Rotation", "proposal_ref", proposalActiveId, ts(-70));
-  insertMessage.run(randomUUID(), roomId, null, "System: agreement activated - Weekly Chore Rotation", "system", proposalActiveId, ts(-60));
-  insertMessage.run(randomUUID(), roomId, users[1].id, "I propose quiet hours for weekdays.", "user", null, ts(-21));
-  insertMessage.run(randomUUID(), roomId, users[1].id, "New proposal created: Quiet Hours 11PM-7AM", "proposal_ref", proposalPendingId, ts(-20));
+  const messageCount = database
+    .prepare("select count(*) as count from messages where room_id = ?")
+    .get(roomId) as { count: number };
+  if ((messageCount.count ?? 0) === 0) {
+    insertMessage.run(randomUUID(), roomId, users[0].id, "Hey team, we should formalize cleaning duties.", "user", null, ts(-75));
+    insertMessage.run(randomUUID(), roomId, users[0].id, "New proposal created: Weekly Chore Rotation", "proposal_ref", proposalActiveId, ts(-70));
+    insertMessage.run(randomUUID(), roomId, null, "System: agreement activated - Weekly Chore Rotation", "system", proposalActiveId, ts(-60));
+    insertMessage.run(randomUUID(), roomId, users[1].id, "I propose quiet hours for weekdays.", "user", null, ts(-21));
+    insertMessage.run(randomUUID(), roomId, users[1].id, "New proposal created: Quiet Hours 11PM-7AM", "proposal_ref", proposalPendingId, ts(-20));
+  }
 
   const insertNotification = database.prepare(
     "insert into notifications (id, user_id, room_id, type, content, ref_type, ref_id, is_read, created_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?)",
   );
   for (const user of users) {
+    const exists = database
+      .prepare("select id from notifications where user_id = ? and ref_id = ? and type = ? limit 1")
+      .get(user.id, proposalActiveId, "agreement_activated") as { id: string } | undefined;
+    if (!exists) {
+      insertNotification.run(
+        randomUUID(),
+        user.id,
+        roomId,
+        "agreement_activated",
+        "Agreement activated: Weekly Chore Rotation",
+        "agreement",
+        proposalActiveId,
+        0,
+        ts(-59),
+      );
+    }
+  }
+  const pendingNotice = database
+    .prepare("select id from notifications where user_id = ? and ref_id = ? and type = ? limit 1")
+    .get(users[0].id, proposalPendingId, "proposal_pending") as { id: string } | undefined;
+  if (!pendingNotice) {
     insertNotification.run(
       randomUUID(),
-      user.id,
+      users[0].id,
       roomId,
-      "agreement_activated",
-      "Agreement activated: Weekly Chore Rotation",
-      "agreement",
-      proposalActiveId,
+      "proposal_pending",
+      "Pending proposal needs your vote: Quiet Hours 11PM-7AM",
+      "proposal",
+      proposalPendingId,
       0,
-      ts(-59),
+      ts(-10),
     );
   }
-  insertNotification.run(
-    randomUUID(),
-    users[0].id,
-    roomId,
-    "proposal_pending",
-    "Pending proposal needs your vote: Quiet Hours 11PM-7AM",
-    "proposal",
-    proposalPendingId,
-    0,
-    ts(-10),
-  );
 
-  database.prepare(
-    "insert into proposal_edit_history (id, proposal_id, editor_id, previous_category, previous_title, previous_description, previous_full_details, edited_at) values (?, ?, ?, ?, ?, ?, ?, ?)",
-  ).run(
-    randomUUID(),
-    proposalActiveId,
-    users[0].id,
-    "chores",
-    "Weekly Chore Plan",
-    "Old draft for cleaning task rotation.",
-    "Old details: rotate every Saturday evening.",
-    ts(-61),
-  );
+  const hasEditHistory = database
+    .prepare("select id from proposal_edit_history where proposal_id = ? limit 1")
+    .get(proposalActiveId) as { id: string } | undefined;
+  if (!hasEditHistory) {
+    database.prepare(
+      "insert into proposal_edit_history (id, proposal_id, editor_id, previous_category, previous_title, previous_description, previous_full_details, edited_at) values (?, ?, ?, ?, ?, ?, ?, ?)",
+    ).run(
+      randomUUID(),
+      proposalActiveId,
+      users[0].id,
+      "chores",
+      "Weekly Chore Plan",
+      "Old draft for cleaning task rotation.",
+      "Old details: rotate every Saturday evening.",
+      ts(-61),
+    );
+  }
 }
 
 function initSchema(database: Database.Database) {

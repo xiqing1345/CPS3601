@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { randomUUID } from "node:crypto";
 import { requireUser } from "@/lib/domain/room";
 import { isLocalMode } from "@/lib/localdb/mode";
 import { getLocalSessionUser } from "@/lib/localdb/session";
@@ -17,6 +18,18 @@ export default async function AppEntryPage() {
       .get(user.id) as { room_id: string } | undefined;
 
     if (!membership?.room_id) {
+      const demoRoom = db
+        .prepare("select id from rooms where invite_code = ?")
+        .get("DORM42") as { id: string } | undefined;
+
+      if (demoRoom?.id) {
+        db.prepare(
+          "insert or ignore into room_members (id, room_id, user_id, role, joined_at) values (?, ?, ?, ?, ?)",
+        ).run(randomUUID(), demoRoom.id, user.id, "member", new Date().toISOString());
+
+        redirect(`/app/room/${demoRoom.id}/chat`);
+      }
+
       redirect("/onboarding");
     }
 
