@@ -20,9 +20,9 @@ function ensureDemoSeed(database: Database.Database) {
   const now = new Date();
   const ts = (mins: number) => new Date(now.getTime() + mins * 60 * 1000).toISOString();
   const users = [
-    { id: randomUUID(), email: "jordan@example.com", displayName: "Jordan" },
-    { id: randomUUID(), email: "alex@example.com", displayName: "Alex" },
-    { id: randomUUID(), email: "sam@example.com", displayName: "Sam" },
+    { id: "11111111-1111-4111-8111-111111111111", email: "jordan@example.com", displayName: "Jordan" },
+    { id: "22222222-2222-4222-8222-222222222222", email: "alex@example.com", displayName: "Alex" },
+    { id: "33333333-3333-4333-8333-333333333333", email: "sam@example.com", displayName: "Sam" },
   ];
 
   const insertUser = database.prepare(
