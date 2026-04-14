@@ -39,9 +39,7 @@ export async function POST(request: Request) {
   const model = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
 
   if (!apiKey) {
-    return NextResponse.json({
-      reply: buildFallbackReply(message),
-    });
+    return NextResponse.json({ reply: "Connection failed" });
   }
 
   try {
@@ -62,20 +60,22 @@ export async function POST(request: Request) {
     });
 
     if (!response.ok) {
-      const fallback = buildFallbackReply(message);
-      return NextResponse.json({ reply: fallback });
+      return NextResponse.json({ reply: "Connection failed" });
     }
 
     const data = await response.json();
-    const reply = String(data?.choices?.[0]?.message?.content ?? "").trim();
+    const rawContent = data?.choices?.[0]?.message?.content;
+    const reply = typeof rawContent === "string"
+      ? rawContent.trim()
+      : Array.isArray(rawContent)
+        ? rawContent.map((part) => String(part?.text ?? "")).join(" ").trim()
+        : "";
 
     return NextResponse.json({
-      reply: reply || buildFallbackReply(message),
+      reply: reply || "Connection failed",
     });
   } catch {
-    return NextResponse.json({
-      reply: buildFallbackReply(message),
-    });
+    return NextResponse.json({ reply: "Connection failed" });
   }
 
 }
