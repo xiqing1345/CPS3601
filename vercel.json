@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "buildCommand": "npm run build:local",
+  "env": {
+    "USE_LOCAL_DB": "true",
+    "NEXT_PUBLIC_USE_LOCAL_DB": "true"
+  }
+}

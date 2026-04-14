@@ -6,10 +6,11 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
 import { withMinDelay } from "@/lib/ui/withMinDelay";
+import { isLocalModeClient } from "@/lib/localdb/mode";
 
 export default function RegisterPage() {
   const router = useRouter();
-  const isLocal = process.env.NEXT_PUBLIC_USE_LOCAL_DB === "true";
+  const isLocal = isLocalModeClient();
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");

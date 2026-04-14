@@ -15,6 +15,7 @@ const ALLOWED_TYPES: Record<string, string> = {
 };
 
 const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+const VERCEL_LOCAL_MAX_SIZE = 2 * 1024 * 1024; // 2 MB in data-url mode
 
 export async function POST(request: Request) {
   if (isLocalMode()) {
@@ -45,15 +46,22 @@ export async function POST(request: Request) {
       );
     }
 
-    if (file.size > MAX_SIZE) {
-      return NextResponse.json({ error: "File too large (max 5 MB)" }, { status: 400 });
+    const localMaxSize = process.env.VERCEL === "1" ? VERCEL_LOCAL_MAX_SIZE : MAX_SIZE;
+    if (file.size > localMaxSize) {
+      const maxLabel = process.env.VERCEL === "1" ? "2 MB" : "5 MB";
+      return NextResponse.json({ error: `File too large (max ${maxLabel})` }, { status: 400 });
+    }
+
+    const bytes = await file.arrayBuffer();
+    if (process.env.VERCEL === "1") {
+      const base64 = Buffer.from(bytes).toString("base64");
+      const dataUrl = `data:${file.type};base64,${base64}`;
+      return NextResponse.json({ url: dataUrl });
     }
 
     const filename = `${randomUUID()}.${ext}`;
     const uploadDir = join(process.cwd(), "public", "uploads");
     await mkdir(uploadDir, { recursive: true });
-
-    const bytes = await file.arrayBuffer();
     await writeFile(join(uploadDir, filename), Buffer.from(bytes));
 
     return NextResponse.json({ url: `/uploads/${filename}` });

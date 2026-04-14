@@ -177,22 +177,33 @@ npm run dev
 | `npm run history:demo` | Add demo proposal edit history records |
 | `npm run build:local` | Production build in local mode |
 | `npm run lint` | Run ESLint |
-6. Proposal auto-activates as agreement when all room members approved
-7. Check active agreements and notifications
 
-## 4. Deploy to Vercel
+---
 
-1. Push repository to GitHub
-2. Import project in Vercel
-3. Set environment variables in Vercel Project Settings
-4. Redeploy
-5. Add Vercel domain to Supabase Auth Redirect URLs
+## Deploy to Vercel (Simplest Demo Path)
 
-## 5. Pre-Launch Checklist
+This repository already includes `vercel.json` for local demo mode.
+
+1. Push this repository to GitHub.
+2. Import it into Vercel.
+3. Deploy directly (no required environment variables).
+
+After deployment, you can register accounts in-app and create/join rooms for the demo.
+
+### Notes for Vercel demo mode
+
+- App data is stored in a local SQLite file under `/tmp`, so data may reset across deployments/cold starts.
+- In Vercel local mode, image upload is capped at **2 MB** and stored as a data URL.
+- This mode is intended for coursework/demo environments, not long-term production data.
+
+---
+
+## Production Checklist (Supabase mode)
+
+If you switch to `USE_LOCAL_DB=false` and deploy with Supabase:
 
 - RLS enabled on all tables
-- Test with at least 2 accounts in the same room
-- Confirm users cannot read/write other room data
-- Confirm proposal vote lifecycle works:
-	- pending -> active agreement
-- Confirm notifications can mark as read
+- Supabase auth callback URLs include your Vercel domain
+- Verify multi-user room isolation
+- Verify proposal vote lifecycle: pending -> active agreement
+- Verify notifications and read/unread flow

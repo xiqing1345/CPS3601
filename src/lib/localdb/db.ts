@@ -2,7 +2,9 @@ import fs from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
 
-const DB_DIR = path.join(process.cwd(), "data");
+const DB_DIR = process.env.VERCEL === "1"
+  ? path.join("/tmp", "dorm-exchange-data")
+  : path.join(process.cwd(), "data");
 const DB_PATH = path.join(DB_DIR, "local-demo.db");
 
 let db: Database.Database | null = null;
