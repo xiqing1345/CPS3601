@@ -54,7 +54,7 @@ In a second terminal (while the dev server is running), run:
 npm run seed:local
 ```
 
-If you skip this step, the app will still auto-create default demo accounts on first local DB startup.
+If you skip this step, the app will still auto-create default demo data on first local DB startup (accounts, room, chat messages, proposals, votes, notifications).
 
 This creates three demo student accounts inside `data/local-demo.db`:
 

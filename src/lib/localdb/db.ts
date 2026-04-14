@@ -17,7 +17,8 @@ function ensureDemoSeed(database: Database.Database) {
     return;
   }
 
-  const now = new Date().toISOString();
+  const now = new Date();
+  const ts = (mins: number) => new Date(now.getTime() + mins * 60 * 1000).toISOString();
   const users = [
     { id: randomUUID(), email: "jordan@example.com", displayName: "Jordan" },
     { id: randomUUID(), email: "alex@example.com", displayName: "Alex" },
@@ -29,7 +30,7 @@ function ensureDemoSeed(database: Database.Database) {
   );
 
   for (const user of users) {
-    insertUser.run(user.id, user.email, user.displayName, bcrypt.hashSync("demo123456", 10), now);
+    insertUser.run(user.id, user.email, user.displayName, bcrypt.hashSync("demo123456", 10), ts(-120));
   }
 
   const roomId = randomUUID();
@@ -37,14 +38,125 @@ function ensureDemoSeed(database: Database.Database) {
     .prepare(
       "insert into rooms (id, room_name, dorm_name, invite_code, created_by, created_at) values (?, ?, ?, ?, ?, ?)",
     )
-    .run(roomId, "Room 402", "Maple Hall", "DORM42", users[0].id, now);
+    .run(roomId, "Room 402", "Maple Hall", "DORM42", users[0].id, ts(-90));
 
   const insertMember = database.prepare(
     "insert into room_members (id, room_id, user_id, role, joined_at) values (?, ?, ?, ?, ?)",
   );
-  insertMember.run(randomUUID(), roomId, users[0].id, "admin", now);
-  insertMember.run(randomUUID(), roomId, users[1].id, "member", now);
-  insertMember.run(randomUUID(), roomId, users[2].id, "member", now);
+  insertMember.run(randomUUID(), roomId, users[0].id, "admin", ts(-89));
+  insertMember.run(randomUUID(), roomId, users[1].id, "member", ts(-88));
+  insertMember.run(randomUUID(), roomId, users[2].id, "member", ts(-87));
+
+  const proposalActiveId = randomUUID();
+  const proposalPendingId = randomUUID();
+
+  database.prepare(
+    "insert into proposals (id, room_id, proposer_id, category, title, description, full_details, status, approval_rule, created_at, activated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  ).run(
+    proposalActiveId,
+    roomId,
+    users[0].id,
+    "chores",
+    "Weekly Chore Rotation",
+    "Rotate shared cleaning tasks each week.",
+    "Every Sunday 20:00 we rotate chores among all roommates. Tasks include trash, floor, and bathroom.",
+    "active",
+    "all_members",
+    ts(-70),
+    ts(-60),
+  );
+
+  database.prepare(
+    "insert into proposals (id, room_id, proposer_id, category, title, description, full_details, status, approval_rule, created_at, activated_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  ).run(
+    proposalPendingId,
+    roomId,
+    users[1].id,
+    "quiet_hours",
+    "Quiet Hours 11PM-7AM",
+    "Set standard quiet hours on weekdays.",
+    "From Monday to Thursday, keep music and speaker volume low between 23:00 and 07:00.",
+    "pending",
+    "all_members",
+    ts(-20),
+    null,
+  );
+
+  const insertVote = database.prepare(
+    "insert into proposal_votes (id, proposal_id, voter_id, vote_type, comment, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?)",
+  );
+
+  for (const user of users) {
+    insertVote.run(randomUUID(), proposalActiveId, user.id, "approve", null, ts(-65), ts(-65));
+  }
+  insertVote.run(randomUUID(), proposalPendingId, users[1].id, "approve", null, ts(-19), ts(-19));
+  insertVote.run(randomUUID(), proposalPendingId, users[2].id, "suggest_edit", "Can we make weekends flexible?", ts(-15), ts(-15));
+
+  database.prepare(
+    "insert into agreements (id, proposal_id, room_id, category, title, details, proposer_id, active_since, is_active, approval_status, created_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  ).run(
+    randomUUID(),
+    proposalActiveId,
+    roomId,
+    "chores",
+    "Weekly Chore Rotation",
+    "Every Sunday 20:00 rotate chores among roommates.",
+    users[0].id,
+    ts(-60),
+    1,
+    "3/3 approved",
+    ts(-60),
+  );
+
+  const insertMessage = database.prepare(
+    "insert into messages (id, room_id, sender_id, content, message_type, proposal_id, created_at) values (?, ?, ?, ?, ?, ?, ?)",
+  );
+  insertMessage.run(randomUUID(), roomId, users[0].id, "Hey team, we should formalize cleaning duties.", "user", null, ts(-75));
+  insertMessage.run(randomUUID(), roomId, users[0].id, "New proposal created: Weekly Chore Rotation", "proposal_ref", proposalActiveId, ts(-70));
+  insertMessage.run(randomUUID(), roomId, null, "System: agreement activated - Weekly Chore Rotation", "system", proposalActiveId, ts(-60));
+  insertMessage.run(randomUUID(), roomId, users[1].id, "I propose quiet hours for weekdays.", "user", null, ts(-21));
+  insertMessage.run(randomUUID(), roomId, users[1].id, "New proposal created: Quiet Hours 11PM-7AM", "proposal_ref", proposalPendingId, ts(-20));
+
+  const insertNotification = database.prepare(
+    "insert into notifications (id, user_id, room_id, type, content, ref_type, ref_id, is_read, created_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  );
+  for (const user of users) {
+    insertNotification.run(
+      randomUUID(),
+      user.id,
+      roomId,
+      "agreement_activated",
+      "Agreement activated: Weekly Chore Rotation",
+      "agreement",
+      proposalActiveId,
+      0,
+      ts(-59),
+    );
+  }
+  insertNotification.run(
+    randomUUID(),
+    users[0].id,
+    roomId,
+    "proposal_pending",
+    "Pending proposal needs your vote: Quiet Hours 11PM-7AM",
+    "proposal",
+    proposalPendingId,
+    0,
+    ts(-10),
+  );
+
+  database.prepare(
+    "insert into proposal_edit_history (id, proposal_id, editor_id, previous_category, previous_title, previous_description, previous_full_details, edited_at) values (?, ?, ?, ?, ?, ?, ?, ?)",
+  ).run(
+    randomUUID(),
+    proposalActiveId,
+    users[0].id,
+    "chores",
+    "Weekly Chore Plan",
+    "Old draft for cleaning task rotation.",
+    "Old details: rotate every Saturday evening.",
+    ts(-61),
+  );
 }
 
 function initSchema(database: Database.Database) {
