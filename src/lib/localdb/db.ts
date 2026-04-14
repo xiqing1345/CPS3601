@@ -1,6 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
+import { randomUUID } from "node:crypto";
 import Database from "better-sqlite3";
+import bcrypt from "bcryptjs";
 
 const DB_DIR = process.env.VERCEL === "1"
   ? path.join("/tmp", "dorm-exchange-data")
@@ -8,6 +10,42 @@ const DB_DIR = process.env.VERCEL === "1"
 const DB_PATH = path.join(DB_DIR, "local-demo.db");
 
 let db: Database.Database | null = null;
+
+function ensureDemoSeed(database: Database.Database) {
+  const countRow = database.prepare("select count(*) as count from users").get() as { count: number };
+  if ((countRow.count ?? 0) > 0) {
+    return;
+  }
+
+  const now = new Date().toISOString();
+  const users = [
+    { id: randomUUID(), email: "jordan@example.com", displayName: "Jordan" },
+    { id: randomUUID(), email: "alex@example.com", displayName: "Alex" },
+    { id: randomUUID(), email: "sam@example.com", displayName: "Sam" },
+  ];
+
+  const insertUser = database.prepare(
+    "insert into users (id, email, display_name, password_hash, created_at) values (?, ?, ?, ?, ?)",
+  );
+
+  for (const user of users) {
+    insertUser.run(user.id, user.email, user.displayName, bcrypt.hashSync("demo123456", 10), now);
+  }
+
+  const roomId = randomUUID();
+  database
+    .prepare(
+      "insert into rooms (id, room_name, dorm_name, invite_code, created_by, created_at) values (?, ?, ?, ?, ?, ?)",
+    )
+    .run(roomId, "Room 402", "Maple Hall", "DORM42", users[0].id, now);
+
+  const insertMember = database.prepare(
+    "insert into room_members (id, room_id, user_id, role, joined_at) values (?, ?, ?, ?, ?)",
+  );
+  insertMember.run(randomUUID(), roomId, users[0].id, "admin", now);
+  insertMember.run(randomUUID(), roomId, users[1].id, "member", now);
+  insertMember.run(randomUUID(), roomId, users[2].id, "member", now);
+}
 
 function initSchema(database: Database.Database) {
   database.pragma("journal_mode = WAL");
@@ -122,6 +160,7 @@ export function getLocalDb() {
     fs.mkdirSync(DB_DIR, { recursive: true });
     db = new Database(DB_PATH);
     initSchema(db);
+    ensureDemoSeed(db);
   }
 
   return db;

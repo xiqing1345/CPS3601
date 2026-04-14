@@ -54,6 +54,8 @@ In a second terminal (while the dev server is running), run:
 npm run seed:local
 ```
 
+If you skip this step, the app will still auto-create default demo accounts on first local DB startup.
+
 This creates three demo student accounts inside `data/local-demo.db`:
 
 | Email | Password | Display name |
@@ -194,6 +196,10 @@ After deployment, you can register accounts in-app and create/join rooms for the
 
 - App data is stored in a local SQLite file under `/tmp`, so data may reset across deployments/cold starts.
 - In Vercel local mode, image upload is capped at **2 MB** and stored as a data URL.
+- If data resets, default demo accounts are auto-created again:
+  - `jordan@example.com` / `demo123456`
+  - `alex@example.com` / `demo123456`
+  - `sam@example.com` / `demo123456`
 - This mode is intended for coursework/demo environments, not long-term production data.
 
 ---
