@@ -1,11 +1,11 @@
 import { writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isLocalMode } from "@/lib/localdb/mode";
 import { getLocalDb } from "@/lib/localdb/db";
+import { getLocalSessionUser } from "@/lib/localdb/session";
 
 const ALLOWED_TYPES: Record<string, string> = {
   "image/jpeg": "jpg",
@@ -19,11 +19,11 @@ const VERCEL_LOCAL_MAX_SIZE = 2 * 1024 * 1024; // 2 MB in data-url mode
 
 export async function POST(request: Request) {
   if (isLocalMode()) {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get("local_user_id")?.value;
-    if (!userId) {
+    const localUser = await getLocalSessionUser();
+    if (!localUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const userId = localUser.id;
 
     const db = getLocalDb();
     const userRow = db.prepare("select id from users where id = ?").get(userId);

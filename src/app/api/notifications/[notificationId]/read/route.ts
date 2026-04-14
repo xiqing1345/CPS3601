@@ -1,8 +1,8 @@
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isLocalMode } from "@/lib/localdb/mode";
 import { getLocalDb } from "@/lib/localdb/db";
+import { getLocalSessionUser } from "@/lib/localdb/session";
 
 export async function POST(
   _request: Request,
@@ -11,11 +11,11 @@ export async function POST(
   const { notificationId } = await params;
 
   if (isLocalMode()) {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get("local_user_id")?.value;
-    if (!userId) {
+    const localUser = await getLocalSessionUser();
+    if (!localUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const userId = localUser.id;
 
     const db = getLocalDb();
     db.prepare("update notifications set is_read = 1 where id = ? and user_id = ?").run(notificationId, userId);

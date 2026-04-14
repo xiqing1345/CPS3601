@@ -13,8 +13,8 @@ export async function POST(request: Request) {
 
   const db = getLocalDb();
   const user = db
-    .prepare("select id, password_hash from users where email = ?")
-    .get(email) as { id: string; password_hash: string } | undefined;
+    .prepare("select id, email, password_hash from users where email = ?")
+    .get(email) as { id: string; email: string; password_hash: string } | undefined;
 
   if (!user) {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
@@ -27,6 +27,12 @@ export async function POST(request: Request) {
 
   const response = NextResponse.json({ ok: true, userId: user.id });
   response.cookies.set("local_user_id", user.id, {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 7,
+  });
+  response.cookies.set("local_user_email", user.email, {
     httpOnly: true,
     sameSite: "lax",
     path: "/",

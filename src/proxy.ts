@@ -6,7 +6,9 @@ export async function proxy(request: NextRequest) {
   if (isLocalMode()) {
     const pathname = request.nextUrl.pathname;
     const protectedPath = pathname.startsWith("/app") || pathname.startsWith("/onboarding");
-    const hasLocalSession = Boolean(request.cookies.get("local_user_id")?.value);
+    const hasLocalSession = Boolean(
+      request.cookies.get("local_user_email")?.value || request.cookies.get("local_user_id")?.value,
+    );
 
     if (!hasLocalSession && protectedPath) {
       const url = request.nextUrl.clone();
