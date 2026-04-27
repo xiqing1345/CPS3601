@@ -4,6 +4,68 @@ import { useState } from "react";
 
 type Msg = { role: "user" | "assistant"; text: string };
 
+function collectVisibleTextSnapshot(maxChars = 6000) {
+  const selectors = [
+    "main",
+    "section",
+    "article",
+    "aside",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "p",
+    "li",
+    "a",
+    "button",
+    "label",
+    "span",
+    "div",
+  ].join(",");
+
+  const nodes = Array.from(document.querySelectorAll<HTMLElement>(selectors));
+  const lines: string[] = [];
+  const seen = new Set<string>();
+
+  for (const el of nodes) {
+    const style = window.getComputedStyle(el);
+    if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity) === 0) {
+      continue;
+    }
+
+    const rect = el.getBoundingClientRect();
+    const isVisible = rect.width > 0
+      && rect.height > 0
+      && rect.bottom >= 0
+      && rect.right >= 0
+      && rect.top <= window.innerHeight
+      && rect.left <= window.innerWidth;
+
+    if (!isVisible) {
+      continue;
+    }
+
+    const text = (el.innerText || "").replace(/\s+/g, " ").trim();
+    if (!text || text.length < 3) {
+      continue;
+    }
+
+    if (seen.has(text)) {
+      continue;
+    }
+
+    seen.add(text);
+    lines.push(text);
+
+    const currentLength = lines.join("\n").length;
+    if (currentLength >= maxChars) {
+      break;
+    }
+  }
+
+  return lines.join("\n").slice(0, maxChars);
+}
+
 export function AIAssistantPanel() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
@@ -19,6 +81,8 @@ export function AIAssistantPanel() {
     const text = input.trim();
     if (!text || loading) return;
 
+    const screenText = collectVisibleTextSnapshot();
+
     setMessages((prev) => [...prev, { role: "user", text }]);
     setInput("");
     setLoading(true);
@@ -27,7 +91,7 @@ export function AIAssistantPanel() {
       const res = await fetch("/api/assistant", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ message: text, screenText }),
       });
 
       const data = await res.json();
@@ -88,6 +152,7 @@ export function AIAssistantPanel() {
               {loading ? "..." : "Send"}
             </button>
           </div>
+          <p className="mt-2 text-[11px] text-slate-500">Reads visible on-screen text as context.</p>
         </section>
       ) : (
         <button

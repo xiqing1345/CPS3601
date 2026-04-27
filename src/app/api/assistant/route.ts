@@ -12,10 +12,15 @@ const SYSTEM_PROMPT = [
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
   const message = String(body.message ?? "").trim();
+  const screenText = String(body.screenText ?? "").trim().slice(0, 8000);
 
   if (!message) {
     return NextResponse.json({ error: "message is required" }, { status: 400 });
   }
+
+  const contextualUserMessage = screenText
+    ? `User question:\n${message}\n\nVisible page text snapshot:\n${screenText}`
+    : message;
 
   const apiKey = process.env.OPENAI_API_KEY;
   const model = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
@@ -36,7 +41,7 @@ export async function POST(request: Request) {
         temperature: 0.4,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: message },
+          { role: "user", content: contextualUserMessage },
         ],
       }),
     });
