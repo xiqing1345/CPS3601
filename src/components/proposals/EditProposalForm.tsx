@@ -30,11 +30,13 @@ export function EditProposalForm({
   const [fullDetails, setFullDetails] = useState(initialFullDetails);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setSuccess(null);
 
     const res = await withMinDelay(fetch(`/api/proposals/${proposalId}`, {
       method: "PATCH",
@@ -50,7 +52,9 @@ export function EditProposalForm({
       return;
     }
 
-    router.push(`/app/room/${roomId}/proposals/${proposalId}`);
+    setSuccess("Submitted successfully.");
+
+    router.push(`/app/room/${roomId}/proposals/${proposalId}?submitted=1`);
     router.refresh();
   }
 
@@ -100,6 +104,7 @@ export function EditProposalForm({
         </label>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
+        {success && <p className="text-sm text-emerald-700">{success}</p>}
 
         <div className="flex gap-3">
           <button className="campus-btn-primary rounded-md px-4 py-2" disabled={loading}>

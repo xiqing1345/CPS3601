@@ -11,10 +11,12 @@ export function VotePanel({ proposalId }: { proposalId: string }) {
   const [comment, setComment] = useState("");
   const [loading, setLoading] = useState<VoteType | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   async function vote(voteType: VoteType) {
     setLoading(voteType);
     setError(null);
+    setSuccess(null);
 
     const res = await withMinDelay(fetch(`/api/proposals/${proposalId}/vote`, {
       method: "POST",
@@ -33,6 +35,8 @@ export function VotePanel({ proposalId }: { proposalId: string }) {
     if (voteType === "suggest_edit") {
       setComment("");
     }
+
+    setSuccess("Submitted successfully.");
 
     router.refresh();
   }
@@ -61,6 +65,7 @@ export function VotePanel({ proposalId }: { proposalId: string }) {
             {loading === "suggest_edit" ? "Submitting..." : "Suggest Edit"}
           </button>
         </div>
+        {success && <p className="text-xs text-emerald-700">{success}</p>}
         {error && <p className="text-xs text-red-600">{error}</p>}
       </div>
     </>

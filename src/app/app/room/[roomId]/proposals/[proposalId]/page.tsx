@@ -8,10 +8,13 @@ import { getLocalDb } from "@/lib/localdb/db";
 
 export default async function ProposalDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ roomId: string; proposalId: string }>;
+  searchParams: Promise<{ submitted?: string }>;
 }) {
   const { roomId, proposalId } = await params;
+  const { submitted } = await searchParams;
 
   if (isLocalMode()) {
     const user = await getLocalSessionUser();
@@ -87,6 +90,11 @@ export default async function ProposalDetailPage({
 
     return (
       <main className="mx-auto min-h-screen w-full max-w-4xl px-6 py-8">
+        {submitted === "1" && (
+          <section className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+            Submitted successfully.
+          </section>
+        )}
         <div className="flex items-center justify-between gap-3">
           <Link className="text-sm text-sky-800 underline" href={`/app/room/${roomId}/chat`}>
             Back to chat
@@ -188,6 +196,11 @@ export default async function ProposalDetailPage({
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-4xl px-6 py-8">
+      {submitted === "1" && (
+        <section className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          Submitted successfully.
+        </section>
+      )}
       <div className="flex items-center justify-between gap-3">
         <Link className="text-sm text-sky-800 underline" href={`/app/room/${roomId}/chat`}>
           Back to chat

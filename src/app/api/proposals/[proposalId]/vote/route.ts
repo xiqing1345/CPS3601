@@ -48,6 +48,13 @@ export async function POST(
       return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
     }
 
+    if (proposal.status === "active") {
+      return NextResponse.json(
+        { error: "Submission failed: cannot change a vote for an approved proposal." },
+        { status: 403 },
+      );
+    }
+
     const member = db
       .prepare("select id from room_members where room_id = ? and user_id = ?")
       .get(proposal.room_id, userId);
@@ -163,6 +170,13 @@ export async function POST(
 
   if (proposalError || !proposal) {
     return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
+  }
+
+  if (proposal.status === "active") {
+    return NextResponse.json(
+      { error: "Submission failed: cannot change a vote for an approved proposal." },
+      { status: 403 },
+    );
   }
 
   const { error: upsertError } = await supabase.from("proposal_votes").upsert(

@@ -10,6 +10,18 @@ type Props = {
   displayName: string;
 };
 
+function getFriendlyProfileCode(userId: string, email: string) {
+  const normalizedEmail = email.trim().toLowerCase();
+
+  if (normalizedEmail === "jordan@example.com") return "JORDAN-DEMO";
+  if (normalizedEmail === "alex@example.com") return "ALEX-DEMO";
+  if (normalizedEmail === "sam@example.com") return "SAM-DEMO";
+
+  const normalizedId = userId.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+  const suffix = normalizedId.slice(0, 6).padEnd(6, "0");
+  return `STUDENT-${suffix}`;
+}
+
 export function UserProfileMenu({ userId, email, displayName }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -27,6 +39,8 @@ export function UserProfileMenu({ userId, email, displayName }: Props) {
       .map((v) => v[0]?.toUpperCase() ?? "")
       .join("");
   }, [name]);
+
+  const profileCode = useMemo(() => getFriendlyProfileCode(userId, email), [userId, email]);
 
   async function saveProfile() {
     const nextName = name.trim();
@@ -76,8 +90,8 @@ export function UserProfileMenu({ userId, email, displayName }: Props) {
 
           <div className="mt-3 space-y-2 text-sm">
             <div>
-              <p className="text-xs text-slate-500">User ID</p>
-              <p className="truncate font-mono text-xs text-slate-700">{userId}</p>
+              <p className="text-xs text-slate-500">Profile ID</p>
+              <p className="truncate font-mono text-xs text-slate-700">{profileCode}</p>
             </div>
 
             <div>

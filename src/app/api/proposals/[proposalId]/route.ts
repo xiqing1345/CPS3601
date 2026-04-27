@@ -53,7 +53,10 @@ export async function PATCH(
     }
 
     if (proposal.status === "active") {
-      return NextResponse.json({ error: "Cannot edit an active proposal" }, { status: 403 });
+      return NextResponse.json(
+        { error: "Submission failed: cannot change an approved proposal." },
+        { status: 403 },
+      );
     }
 
     const changed =
@@ -131,7 +134,10 @@ export async function PATCH(
   }
 
   if (proposal.status === "active") {
-    return NextResponse.json({ error: "Cannot edit an active proposal" }, { status: 403 });
+    return NextResponse.json(
+      { error: "Submission failed: cannot change an approved proposal." },
+      { status: 403 },
+    );
   }
 
   const changed =
