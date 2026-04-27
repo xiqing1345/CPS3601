@@ -10,6 +10,11 @@ const DB_PATH = process.env.VERCEL === "1"
 
 let db: Database.Database | null = null;
 
+const DEMO_ROOM_ID = "44444444-4444-4444-8444-444444444444";
+const DEMO_ACTIVE_PROPOSAL_ID = "55555555-5555-4555-8555-555555555555";
+const DEMO_PENDING_PROPOSAL_ID = "66666666-6666-4666-8666-666666666666";
+const DEMO_AGREEMENT_ID = "77777777-7777-4777-8777-777777777777";
+
 function initSchema(database: Database.Database) {
   database.pragma("journal_mode = WAL");
   database.exec(`
@@ -148,7 +153,7 @@ function ensureDemoSeed(database: Database.Database) {
     .prepare("select id from rooms where invite_code = ?")
     .get("DORM42") as { id: string } | undefined;
 
-  const roomId = demoRoom?.id ?? randomUUID();
+  const roomId = demoRoom?.id ?? DEMO_ROOM_ID;
   if (!demoRoom) {
     database
       .prepare("insert into rooms (id, room_name, dorm_name, invite_code, created_by, created_at) values (?, ?, ?, ?, ?, ?)")
@@ -176,8 +181,8 @@ function ensureDemoSeed(database: Database.Database) {
     .prepare("select id from proposals where room_id = ? and title = ?")
     .get(roomId, "Quiet Hours 11PM-7AM") as { id: string } | undefined;
 
-  const proposalActiveId = activeProposal?.id ?? randomUUID();
-  const proposalPendingId = pendingProposal?.id ?? randomUUID();
+  const proposalActiveId = activeProposal?.id ?? DEMO_ACTIVE_PROPOSAL_ID;
+  const proposalPendingId = pendingProposal?.id ?? DEMO_PENDING_PROPOSAL_ID;
 
   if (!activeProposal) {
     database
@@ -227,7 +232,7 @@ function ensureDemoSeed(database: Database.Database) {
   database
     .prepare("insert or ignore into agreements (id, proposal_id, room_id, category, title, details, proposer_id, active_since, is_active, approval_status, created_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
     .run(
-      randomUUID(),
+      DEMO_AGREEMENT_ID,
       proposalActiveId,
       roomId,
       "chores",
