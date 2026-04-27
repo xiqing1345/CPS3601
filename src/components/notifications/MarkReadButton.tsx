@@ -5,15 +5,28 @@ import { useRouter } from "next/navigation";
 import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
 import { withMinDelay } from "@/lib/ui/withMinDelay";
 
-export function MarkReadButton() {
+type Props = {
+  onMarkedAllRead?: () => void;
+  autoRefresh?: boolean;
+};
+
+export function MarkReadButton({ onMarkedAllRead, autoRefresh = true }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
   async function onClick() {
     setLoading(true);
-    await withMinDelay(fetch("/api/notifications/read", { method: "POST" }), 450);
+    const res = await withMinDelay(fetch("/api/notifications/read", { method: "POST" }), 450);
     setLoading(false);
-    router.refresh();
+
+    if (!res.ok) {
+      return;
+    }
+
+    onMarkedAllRead?.();
+    if (autoRefresh) {
+      router.refresh();
+    }
   }
 
   return (

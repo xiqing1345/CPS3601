@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { MarkReadButton } from "@/components/notifications/MarkReadButton";
-import { NotificationItem } from "@/components/notifications/NotificationItem";
+import { NotificationsPanel } from "@/components/notifications/NotificationsPanel";
 import { isLocalMode } from "@/lib/localdb/mode";
 import { getLocalSessionUser } from "@/lib/localdb/session";
 import { getLocalDb } from "@/lib/localdb/db";
@@ -24,34 +23,18 @@ export default async function NotificationsPage() {
           }>)
       : [];
 
-    const unreadCount = notifications.filter((n) => n.is_read === 0).length;
-
     return (
       <main className="mx-auto min-h-screen w-full max-w-4xl px-6 py-8">
-        <div className="flex items-center justify-between">
-          <h1 className="campus-heading text-2xl font-semibold">Notifications</h1>
-          <MarkReadButton />
-        </div>
-
-        {unreadCount > 0 && (
-          <div className="campus-badge mt-4 rounded-lg px-4 py-3 text-sm">
-            You have {unreadCount} unread notification{unreadCount > 1 ? "s" : ""}.
-          </div>
-        )}
-
-        <div className="mt-6 space-y-3">
-          {notifications.map((item) => (
-            <NotificationItem
-              key={item.id}
-              id={item.id}
-              type={item.type}
-              content={item.content}
-              isRead={item.is_read === 1}
-              createdAt={item.created_at}
-              roomId={item.room_id}
-            />
-          ))}
-        </div>
+        <NotificationsPanel
+          initialNotifications={notifications.map((item) => ({
+            id: item.id,
+            type: item.type,
+            content: item.content,
+            isRead: item.is_read === 1,
+            createdAt: item.created_at,
+            roomId: item.room_id,
+          }))}
+        />
       </main>
     );
   }
@@ -68,34 +51,18 @@ export default async function NotificationsPage() {
     .order("created_at", { ascending: false })
     .limit(80);
 
-  const unreadCount = (notifications ?? []).filter((n) => !n.is_read).length;
-
   return (
     <main className="mx-auto min-h-screen w-full max-w-4xl px-6 py-8">
-      <div className="flex items-center justify-between">
-        <h1 className="campus-heading text-2xl font-semibold">Notifications</h1>
-        <MarkReadButton />
-      </div>
-
-      {unreadCount > 0 && (
-        <div className="campus-badge mt-4 rounded-lg px-4 py-3 text-sm">
-          You have {unreadCount} unread notification{unreadCount > 1 ? "s" : ""}.
-        </div>
-      )}
-
-      <div className="mt-6 space-y-3">
-        {(notifications ?? []).map((item) => (
-          <NotificationItem
-            key={item.id}
-            id={item.id}
-            type={item.type}
-            content={item.content}
-            isRead={item.is_read}
-            createdAt={item.created_at}
-            roomId={item.room_id}
-          />
-        ))}
-      </div>
+      <NotificationsPanel
+        initialNotifications={(notifications ?? []).map((item) => ({
+          id: item.id,
+          type: item.type,
+          content: item.content,
+          isRead: item.is_read,
+          createdAt: item.created_at,
+          roomId: item.room_id,
+        }))}
+      />
     </main>
   );
 }

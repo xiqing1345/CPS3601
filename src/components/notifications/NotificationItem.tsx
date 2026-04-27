@@ -12,19 +12,31 @@ type Props = {
   createdAt: string;
   roomId: string | null;
   isRead: boolean;
+  onMarkedRead?: (id: string) => void;
+  autoRefresh?: boolean;
 };
 
-export function NotificationItem({ id, type, content, createdAt, roomId, isRead }: Props) {
+export function NotificationItem({ id, type, content, createdAt, roomId, isRead, onMarkedRead, autoRefresh = true }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  const [read, setRead] = useState(isRead);
 
   async function markOneRead() {
-    if (isRead || busy) return;
+    if (read || busy) return;
 
     setBusy(true);
-    await withMinDelay(fetch(`/api/notifications/${id}/read`, { method: "POST" }), 320);
+    const res = await withMinDelay(fetch(`/api/notifications/${id}/read`, { method: "POST" }), 320);
     setBusy(false);
-    router.refresh();
+
+    if (!res.ok) {
+      return;
+    }
+
+    setRead(true);
+    onMarkedRead?.(id);
+    if (autoRefresh) {
+      router.refresh();
+    }
   }
 
   return (
@@ -40,10 +52,10 @@ export function NotificationItem({ id, type, content, createdAt, roomId, isRead 
       </button>
       <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
         <span>{new Date(createdAt).toLocaleString()}</span>
-        <span>{isRead ? "read" : "unread"}</span>
+        <span>{read ? "read" : "unread"}</span>
       </div>
       <div className="mt-2 flex items-center gap-3 text-xs">
-        {!isRead && (
+        {!read && (
           <button className="text-slate-700 underline" onClick={markOneRead} disabled={busy} type="button">
             {busy ? "Updating..." : "Mark this as read"}
           </button>

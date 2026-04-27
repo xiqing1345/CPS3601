@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { VotePanel } from "@/components/proposals/VotePanel";
+import { ProposalVotingSection } from "@/components/proposals/ProposalVotingSection";
 import { isLocalMode } from "@/lib/localdb/mode";
 import { getLocalSessionUser } from "@/lib/localdb/session";
 import { getLocalDb } from "@/lib/localdb/db";
@@ -120,21 +120,15 @@ export default async function ProposalDetailPage({
           </div>
         </section>
 
-        <section className="mt-4">
-          <VotePanel proposalId={proposalId} />
-        </section>
-
-        <section className="campus-card mt-4 rounded-xl p-6">
-          <h2 className="campus-heading text-lg font-semibold">Votes</h2>
-          <div className="mt-3 space-y-2">
-            {votes.map((vote, idx) => (
-              <article key={idx} className="rounded-md border border-slate-200 bg-white p-3 text-sm">
-                <p className="font-medium">{vote.voter_name ?? "Member"} · {vote.vote_type}</p>
-                {vote.comment && <p className="mt-1 text-slate-600">{vote.comment}</p>}
-              </article>
-            ))}
-          </div>
-        </section>
+        <ProposalVotingSection
+          proposalId={proposalId}
+          currentUserName={user.display_name}
+          initialVotes={votes.map((vote) => ({
+            voteType: vote.vote_type,
+            comment: vote.comment,
+            voterName: vote.voter_name ?? "Member",
+          }))}
+        />
 
         <section className="campus-card mt-4 rounded-xl p-6">
           <h2 className="campus-heading text-lg font-semibold">Edit History</h2>
@@ -194,6 +188,12 @@ export default async function ProposalDetailPage({
 
   const approved = (votes ?? []).filter((v) => v.vote_type === "approve").length;
 
+  const { data: currentProfile } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("id", user.id)
+    .maybeSingle();
+
   return (
     <main className="mx-auto min-h-screen w-full max-w-4xl px-6 py-8">
       {submitted === "1" && (
@@ -226,21 +226,15 @@ export default async function ProposalDetailPage({
         </div>
       </section>
 
-      <section className="mt-4">
-        <VotePanel proposalId={proposalId} />
-      </section>
-
-      <section className="campus-card mt-4 rounded-xl p-6">
-        <h2 className="campus-heading text-lg font-semibold">Votes</h2>
-        <div className="mt-3 space-y-2">
-          {(votes ?? []).map((vote, idx) => (
-            <article key={idx} className="rounded-md border border-slate-200 bg-white p-3 text-sm">
-              <p className="font-medium">{(vote.voter as { display_name?: string } | null)?.display_name ?? "Member"} · {vote.vote_type}</p>
-              {vote.comment && <p className="mt-1 text-slate-600">{vote.comment}</p>}
-            </article>
-          ))}
-        </div>
-      </section>
+      <ProposalVotingSection
+        proposalId={proposalId}
+        currentUserName={currentProfile?.display_name ?? "You"}
+        initialVotes={(votes ?? []).map((vote) => ({
+          voteType: vote.vote_type,
+          comment: vote.comment,
+          voterName: (vote.voter as { display_name?: string } | null)?.display_name ?? "Member",
+        }))}
+      />
 
       <section className="campus-card mt-4 rounded-xl p-6">
         <h2 className="campus-heading text-lg font-semibold">Edit History</h2>

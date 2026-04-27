@@ -6,7 +6,13 @@ import type { VoteType } from "@/types/domain";
 import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
 import { withMinDelay } from "@/lib/ui/withMinDelay";
 
-export function VotePanel({ proposalId }: { proposalId: string }) {
+type VotePanelProps = {
+  proposalId: string;
+  onVoteSubmitted?: (vote: { voteType: VoteType; comment: string | null }) => void;
+  autoRefresh?: boolean;
+};
+
+export function VotePanel({ proposalId, onVoteSubmitted, autoRefresh = true }: VotePanelProps) {
   const router = useRouter();
   const [comment, setComment] = useState("");
   const [loading, setLoading] = useState<VoteType | null>(null);
@@ -36,9 +42,13 @@ export function VotePanel({ proposalId }: { proposalId: string }) {
       setComment("");
     }
 
+    onVoteSubmitted?.({ voteType, comment: voteType === "suggest_edit" ? comment.trim() || null : null });
+
     setSuccess("Submitted successfully.");
 
-    router.refresh();
+    if (autoRefresh) {
+      router.refresh();
+    }
   }
 
   return (
