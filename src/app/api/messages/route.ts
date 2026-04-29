@@ -17,6 +17,7 @@ export async function POST(request: Request) {
     const roomId = String(body.roomId ?? "");
     const content = String(body.content ?? "").trim();
     const messageType = String(body.messageType ?? "") === "image" ? "image" : "user";
+    const proposalId = body.proposalId ? String(body.proposalId) : null;
 
     if (!roomId || !content) {
       return NextResponse.json({ error: "roomId and content are required" }, { status: 400 });
@@ -30,9 +31,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    if (proposalId) {
+      const linkedProposal = db
+        .prepare("select id from proposals where id = ? and room_id = ?")
+        .get(proposalId, roomId);
+      if (!linkedProposal) {
+        return NextResponse.json({ error: "Linked proposal is invalid for this room" }, { status: 400 });
+      }
+    }
+
     db.prepare(
       "insert into messages (id, room_id, sender_id, content, message_type, proposal_id, created_at) values (?, ?, ?, ?, ?, ?, ?)",
-    ).run(randomUUID(), roomId, userId, content, messageType, null, new Date().toISOString());
+    ).run(randomUUID(), roomId, userId, content, messageType, proposalId, new Date().toISOString());
 
     return NextResponse.json({ ok: true });
   }
@@ -50,9 +60,22 @@ export async function POST(request: Request) {
   const roomId = String(body.roomId ?? "");
   const content = String(body.content ?? "").trim();
   const messageType = String(body.messageType ?? "") === "image" ? "image" : "user";
+  const proposalId = body.proposalId ? String(body.proposalId) : null;
 
   if (!roomId || !content) {
     return NextResponse.json({ error: "roomId and content are required" }, { status: 400 });
+  }
+
+  if (proposalId) {
+    const { data: proposal } = await supabase
+      .from("proposals")
+      .select("id")
+      .eq("id", proposalId)
+      .eq("room_id", roomId)
+      .maybeSingle();
+    if (!proposal) {
+      return NextResponse.json({ error: "Linked proposal is invalid for this room" }, { status: 400 });
+    }
   }
 
   const { error } = await supabase.from("messages").insert({
@@ -60,6 +83,7 @@ export async function POST(request: Request) {
     sender_id: user.id,
     content,
     message_type: messageType,
+    proposal_id: proposalId,
   });
 
   if (error) {

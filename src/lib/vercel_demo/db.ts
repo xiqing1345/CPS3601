@@ -14,6 +14,16 @@ const DEMO_ROOM_ID = "44444444-4444-4444-8444-444444444444";
 const DEMO_ACTIVE_PROPOSAL_ID = "55555555-5555-4555-8555-555555555555";
 const DEMO_PENDING_PROPOSAL_ID = "66666666-6666-4666-8666-666666666666";
 const DEMO_AGREEMENT_ID = "77777777-7777-4777-8777-777777777777";
+const DEMO_MESSAGE_IDS = {
+  kickoff: "88888888-8888-4888-8888-888888888881",
+  choresPlan: "88888888-8888-4888-8888-888888888882",
+  choreSupport: "88888888-8888-4888-8888-888888888883",
+  choresActivated: "88888888-8888-4888-8888-888888888887",
+  quietHoursStart: "88888888-8888-4888-8888-888888888884",
+  quietHoursProposalRef: "88888888-8888-4888-8888-888888888888",
+  quietHoursFeedback: "88888888-8888-4888-8888-888888888885",
+  quietHoursReply: "88888888-8888-4888-8888-888888888886",
+};
 
 function initSchema(database: Database.Database) {
   database.pragma("journal_mode = WAL");
@@ -245,19 +255,87 @@ function ensureDemoSeed(database: Database.Database) {
       ts(-60),
     );
 
-  const messageCount = database
-    .prepare("select count(*) as count from messages where room_id = ?")
-    .get(roomId) as { count: number };
-  if ((messageCount.count ?? 0) === 0) {
-    const insertMessage = database.prepare(
-      "insert into messages (id, room_id, sender_id, content, message_type, proposal_id, created_at) values (?, ?, ?, ?, ?, ?, ?)",
-    );
-    insertMessage.run(randomUUID(), roomId, users[0].id, "Hey team, we should formalize cleaning duties.", "user", null, ts(-75));
-    insertMessage.run(randomUUID(), roomId, users[0].id, "New proposal created: Weekly Chore Rotation", "proposal_ref", proposalActiveId, ts(-70));
-    insertMessage.run(randomUUID(), roomId, null, "System: agreement activated - Weekly Chore Rotation", "system", proposalActiveId, ts(-60));
-    insertMessage.run(randomUUID(), roomId, users[1].id, "I propose quiet hours for weekdays.", "user", null, ts(-21));
-    insertMessage.run(randomUUID(), roomId, users[1].id, "New proposal created: Quiet Hours 11PM-7AM", "proposal_ref", proposalPendingId, ts(-20));
-  }
+  const insertMessage = database.prepare(
+    "insert or ignore into messages (id, room_id, sender_id, content, message_type, proposal_id, created_at) values (?, ?, ?, ?, ?, ?, ?)",
+  );
+  insertMessage.run(
+    DEMO_MESSAGE_IDS.kickoff,
+    roomId,
+    users[0].id,
+    "Let's keep the apartment cleaner this week. I drafted a chore proposal.",
+    "user",
+    null,
+    ts(-75),
+  );
+  insertMessage.run(
+    DEMO_MESSAGE_IDS.choresPlan,
+    roomId,
+    users[0].id,
+    "New proposal created: Weekly Chore Rotation",
+    "proposal_ref",
+    proposalActiveId,
+    ts(-70),
+  );
+  insertMessage.run(
+    DEMO_MESSAGE_IDS.choreSupport,
+    roomId,
+    users[2].id,
+    "I am in favor of Weekly Chore Rotation. Sunday evening check-ins work for me.",
+    "user",
+    proposalActiveId,
+    ts(-67),
+  );
+  insertMessage.run(
+    DEMO_MESSAGE_IDS.choresActivated,
+    roomId,
+    null,
+    "Agreement activated - Weekly Chore Rotation",
+    "system",
+    proposalActiveId,
+    ts(-60),
+  );
+  insertMessage.run(
+    DEMO_MESSAGE_IDS.quietHoursStart,
+    roomId,
+    users[1].id,
+    "I created Quiet Hours 11PM-7AM so everyone can rest before morning classes.",
+    "user",
+    null,
+    ts(-21),
+  );
+  insertMessage.run(
+    DEMO_MESSAGE_IDS.quietHoursFeedback,
+    roomId,
+    users[2].id,
+    "Quiet hours sounds good. Could we keep weekends a little flexible?",
+    "user",
+    proposalPendingId,
+    ts(-18),
+  );
+  insertMessage.run(
+    DEMO_MESSAGE_IDS.quietHoursReply,
+    roomId,
+    users[0].id,
+    "I can approve Quiet Hours 11PM-7AM if we revisit weekend exceptions next week.",
+    "user",
+    proposalPendingId,
+    ts(-16),
+  );
+  insertMessage.run(
+    DEMO_MESSAGE_IDS.quietHoursProposalRef,
+    roomId,
+    users[1].id,
+    "New proposal created: Quiet Hours 11PM-7AM",
+    "proposal_ref",
+    proposalPendingId,
+    ts(-20),
+  );
+
+  // Backfill: normalize old local rows that were written with speaker prefixes.
+  database.prepare("update messages set content = substr(content, 9) where content like 'System: %'").run();
+  database.prepare("update messages set content = substr(content, 9) where content like 'Jordan: %'").run();
+  database.prepare("update messages set content = substr(content, 7) where content like 'Alex: %'").run();
+  database.prepare("update messages set content = substr(content, 6) where content like 'Sam: %'").run();
 
   const insertNotification = database.prepare(
     "insert into notifications (id, user_id, room_id, type, content, ref_type, ref_id, is_read, created_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?)",

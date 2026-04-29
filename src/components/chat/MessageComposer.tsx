@@ -5,9 +5,17 @@ import { useRouter } from "next/navigation";
 import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
 import { withMinDelay } from "@/lib/ui/withMinDelay";
 
-export function MessageComposer({ roomId }: { roomId: string }) {
+type Props = {
+  roomId: string;
+  proposalOptions: Array<{ id: string; title: string }>;
+  onMessageSent?: (message: { content: string; messageType: "user" | "image"; proposalId: string | null }) => void;
+  autoRefresh?: boolean;
+};
+
+export function MessageComposer({ roomId, proposalOptions, onMessageSent, autoRefresh = true }: Props) {
   const router = useRouter();
   const [content, setContent] = useState("");
+  const [linkedProposalId, setLinkedProposalId] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -67,7 +75,12 @@ export function MessageComposer({ roomId }: { roomId: string }) {
       const msgRes = await fetch("/api/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roomId, content: url, messageType: "image" }),
+        body: JSON.stringify({
+          roomId,
+          content: url,
+          messageType: "image",
+          proposalId: linkedProposalId || null,
+        }),
       });
 
       const result = await msgRes.json();
@@ -78,8 +91,11 @@ export function MessageComposer({ roomId }: { roomId: string }) {
         return;
       }
 
+      onMessageSent?.({ content: url, messageType: "image", proposalId: linkedProposalId || null });
       clearImage();
-      router.refresh();
+      if (autoRefresh) {
+        router.refresh();
+      }
       return;
     }
 
@@ -93,7 +109,7 @@ export function MessageComposer({ roomId }: { roomId: string }) {
       fetch("/api/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roomId, content: text }),
+        body: JSON.stringify({ roomId, content: text, proposalId: linkedProposalId || null }),
       }),
       420,
     );
@@ -106,14 +122,34 @@ export function MessageComposer({ roomId }: { roomId: string }) {
       return;
     }
 
+    onMessageSent?.({ content: text, messageType: "user", proposalId: linkedProposalId || null });
     setContent("");
-    router.refresh();
+    if (autoRefresh) {
+      router.refresh();
+    }
   }
 
   return (
     <>
       <LoadingOverlay visible={loading} label={imageFile ? "Uploading image" : "Sending message"} />
       <form onSubmit={submitMessage} className="space-y-2">
+        <label className="block text-xs text-slate-600">
+          Link to proposal (optional)
+          <select
+            className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs"
+            value={linkedProposalId}
+            onChange={(e) => setLinkedProposalId(e.target.value)}
+            disabled={loading}
+          >
+            <option value="">No linked proposal</option>
+            {proposalOptions.map((proposal) => (
+              <option key={proposal.id} value={proposal.id}>
+                {proposal.title}
+              </option>
+            ))}
+          </select>
+        </label>
+
         {imagePreview && (
           <div className="relative inline-block">
             {/* eslint-disable-next-line @next/next/no-img-element */}

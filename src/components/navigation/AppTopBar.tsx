@@ -30,7 +30,7 @@ export function AppTopBar({ unreadCount, userId, email, displayName }: Props) {
 
   return (
     <div className="pointer-events-none fixed right-4 top-4 z-50">
-      <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-slate-200 bg-white/95 px-2 py-1 shadow-lg backdrop-blur">
+      <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-slate-200 bg-white/40 px-2 py-1 opacity-55 shadow-lg backdrop-blur transition-all duration-200 hover:bg-white/95 hover:opacity-100">
         <p className="hidden max-w-[180px] truncate px-2 text-xs font-semibold text-slate-700 sm:block">
           {title}
         </p>

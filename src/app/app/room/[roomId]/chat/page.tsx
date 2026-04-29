@@ -1,10 +1,14 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { MessageComposer } from "@/components/chat/MessageComposer";
+import { ChatMessageSection } from "@/components/chat/ChatMessageSection";
 import { isLocalMode } from "@/lib/localdb/mode";
 import { getLocalSessionUser } from "@/lib/localdb/session";
 import { getLocalDb } from "@/lib/localdb/db";
+
+function normalizeMessageContent(content: string) {
+  return content.replace(/^(System|[A-Za-z][A-Za-z0-9_-]{1,24}):\s+/, "");
+}
 
 export default async function ChatPage({ params }: { params: Promise<{ roomId: string }> }) {
   const { roomId } = await params;
@@ -51,12 +55,18 @@ export default async function ChatPage({ params }: { params: Promise<{ roomId: s
       )
       .all(roomId) as Array<{ id: string; title: string; description: string; status: string; created_at: string }>;
 
+    const roommateMessages = messages.filter((m) => m.message_type === "user" || m.message_type === "image");
+    const systemNotices = messages
+      .filter((m) => m.message_type !== "user" && m.message_type !== "image")
+      .slice(-30)
+      .reverse();
+
     const unreadRow = db
       .prepare("select count(*) as count from notifications where user_id = ? and room_id = ? and is_read = 0")
       .get(user.id, roomId) as { count: number };
 
     return (
-      <main className="mx-auto grid min-h-screen w-full max-w-6xl gap-6 px-4 py-6 lg:grid-cols-[2fr_1fr]">
+      <main className="mx-auto grid min-h-screen w-full max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[2fr_1fr_1fr]">
         <section className="campus-card rounded-xl p-4">
           <header className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
             <div>
@@ -76,31 +86,19 @@ export default async function ChatPage({ params }: { params: Promise<{ roomId: s
             </div>
           </header>
 
-          <div className="mb-4 max-h-[65vh] space-y-3 overflow-y-auto pr-2">
-            {messages.map((m) => (
-              <article key={m.id} className="rounded-lg border border-slate-200 bg-white/80 p-3">
-                <p className="text-sm text-slate-500">{m.message_type === "system" ? "System" : m.sender_name ?? "Unknown"}</p>
-                {m.message_type === "image" ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={m.content}
-                    alt="Shared image"
-                    className="mt-1 max-w-xs rounded-lg border border-slate-200"
-                    loading="lazy"
-                  />
-                ) : (
-                  <p className="mt-1 whitespace-pre-wrap text-sm">{m.content}</p>
-                )}
-                {m.proposal_id && (
-                  <Link className="mt-2 inline-block text-xs text-sky-800 underline" href={`/app/room/${roomId}/proposals/${m.proposal_id}`}>
-                    Open linked proposal
-                  </Link>
-                )}
-              </article>
-            ))}
-          </div>
-
-          <MessageComposer roomId={roomId} />
+          <ChatMessageSection
+            roomId={roomId}
+            currentUserName={user.display_name}
+            initialMessages={roommateMessages.map((m) => ({
+              id: m.id,
+              content: normalizeMessageContent(m.content),
+              messageType: m.message_type,
+              createdAt: m.created_at,
+              proposalId: m.proposal_id,
+              senderName: m.sender_name ?? "Unknown",
+            }))}
+            proposalOptions={proposals.map((p) => ({ id: p.id, title: p.title }))}
+          />
         </section>
 
         <aside className="campus-paper-card space-y-4 rounded-xl p-4">
@@ -117,6 +115,28 @@ export default async function ChatPage({ params }: { params: Promise<{ roomId: s
               </article>
             ))}
           </div>
+        </aside>
+
+        <aside className="campus-paper-card space-y-4 rounded-xl p-4">
+          <h2 className="campus-heading text-lg font-semibold">System Notifications</h2>
+          {systemNotices.length === 0 ? (
+            <p className="text-sm text-slate-600">No system notifications in this room yet.</p>
+          ) : (
+            <div className="max-h-[65vh] space-y-3 overflow-y-auto pr-1">
+              {systemNotices.map((m) => (
+                <article key={m.id} className="rounded-lg border border-slate-200 bg-white p-3 text-sm">
+                  <p className="text-xs uppercase tracking-wide text-slate-500">{m.message_type}</p>
+                  <p className="mt-1 text-slate-800">{normalizeMessageContent(m.content)}</p>
+                  {m.proposal_id && (
+                    <Link className="mt-2 inline-block text-xs text-sky-800 underline" href={`/app/room/${roomId}/proposals/${m.proposal_id}`}>
+                      Open related proposal
+                    </Link>
+                  )}
+                  <p className="mt-2 text-xs text-slate-500">{new Date(m.created_at).toLocaleString()}</p>
+                </article>
+              ))}
+            </div>
+          )}
         </aside>
       </main>
     );
@@ -164,8 +184,14 @@ export default async function ChatPage({ params }: { params: Promise<{ roomId: s
       .eq("is_read", false),
   ]);
 
+  const roommateMessages = (messages ?? []).filter((m) => m.message_type === "user" || m.message_type === "image");
+  const systemNotices = (messages ?? [])
+    .filter((m) => m.message_type !== "user" && m.message_type !== "image")
+    .slice(-30)
+    .reverse();
+
   return (
-    <main className="mx-auto grid min-h-screen w-full max-w-6xl gap-6 px-4 py-6 lg:grid-cols-[2fr_1fr]">
+    <main className="mx-auto grid min-h-screen w-full max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[2fr_1fr_1fr]">
       <section className="campus-card rounded-xl p-4">
         <header className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
           <div>
@@ -185,31 +211,19 @@ export default async function ChatPage({ params }: { params: Promise<{ roomId: s
           </div>
         </header>
 
-        <div className="mb-4 max-h-[65vh] space-y-3 overflow-y-auto pr-2">
-          {(messages ?? []).map((m) => (
-            <article key={m.id} className="rounded-lg border border-slate-200 bg-white/80 p-3">
-              <p className="text-sm text-slate-500">{m.message_type === "system" ? "System" : (m.sender as { display_name?: string } | null)?.display_name ?? "Unknown"}</p>
-              {m.message_type === "image" ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={m.content}
-                  alt="Shared image"
-                  className="mt-1 max-w-xs rounded-lg border border-slate-200"
-                  loading="lazy"
-                />
-              ) : (
-                <p className="mt-1 whitespace-pre-wrap text-sm">{m.content}</p>
-              )}
-              {m.proposal_id && (
-                <Link className="mt-2 inline-block text-xs text-sky-800 underline" href={`/app/room/${roomId}/proposals/${m.proposal_id}`}>
-                  Open linked proposal
-                </Link>
-              )}
-            </article>
-          ))}
-        </div>
-
-        <MessageComposer roomId={roomId} />
+        <ChatMessageSection
+          roomId={roomId}
+          currentUserName="You"
+          initialMessages={roommateMessages.map((m) => ({
+            id: m.id,
+            content: normalizeMessageContent(m.content),
+            messageType: m.message_type,
+            createdAt: m.created_at,
+            proposalId: m.proposal_id,
+            senderName: (m.sender as { display_name?: string } | null)?.display_name ?? "Unknown",
+          }))}
+          proposalOptions={(proposals ?? []).map((p) => ({ id: p.id, title: p.title }))}
+        />
       </section>
 
       <aside className="campus-paper-card space-y-4 rounded-xl p-4">
@@ -226,6 +240,28 @@ export default async function ChatPage({ params }: { params: Promise<{ roomId: s
             </article>
           ))}
         </div>
+      </aside>
+
+      <aside className="campus-paper-card space-y-4 rounded-xl p-4">
+        <h2 className="campus-heading text-lg font-semibold">System Notifications</h2>
+        {systemNotices.length === 0 ? (
+          <p className="text-sm text-slate-600">No system notifications in this room yet.</p>
+        ) : (
+          <div className="max-h-[65vh] space-y-3 overflow-y-auto pr-1">
+            {systemNotices.map((m) => (
+              <article key={m.id} className="rounded-lg border border-slate-200 bg-white p-3 text-sm">
+                <p className="text-xs uppercase tracking-wide text-slate-500">{m.message_type}</p>
+                <p className="mt-1 text-slate-800">{normalizeMessageContent(m.content)}</p>
+                {m.proposal_id && (
+                  <Link className="mt-2 inline-block text-xs text-sky-800 underline" href={`/app/room/${roomId}/proposals/${m.proposal_id}`}>
+                    Open related proposal
+                  </Link>
+                )}
+                <p className="mt-2 text-xs text-slate-500">{new Date(m.created_at).toLocaleString()}</p>
+              </article>
+            ))}
+          </div>
+        )}
       </aside>
     </main>
   );

@@ -101,7 +101,7 @@ export async function PATCH(
       randomUUID(),
       proposal.room_id,
       null,
-      `System: proposal updated - ${title}. All votes have been reset.`,
+      `Proposal updated - ${title}. All votes have been reset.`,
       "system",
       proposalId,
       new Date().toISOString(),
@@ -196,7 +196,7 @@ export async function PATCH(
   await supabase.from("messages").insert({
     room_id: proposal.room_id,
     sender_id: null,
-    content: `System: proposal updated - ${title}. All votes have been reset.`,
+    content: `Proposal updated - ${title}. All votes have been reset.`,
     message_type: "system",
     proposal_id: proposalId,
   });

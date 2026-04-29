@@ -114,7 +114,7 @@ export async function POST(
         randomUUID(),
         proposal.room_id,
         null,
-        `System: agreement activated - ${proposal.title}`,
+        `Agreement activated - ${proposal.title}`,
         "system",
         proposalId,
         now,
@@ -235,7 +235,7 @@ export async function POST(
     await supabase.from("messages").insert({
       room_id: proposal.room_id,
       sender_id: null,
-      content: `System: agreement activated - ${proposal.title}`,
+      content: `Agreement activated - ${proposal.title}`,
       message_type: "system",
       proposal_id: proposalId,
     });
