@@ -5,6 +5,7 @@ import { getLocalSessionUser } from "@/lib/localdb/session";
 import { getLocalDb } from "@/lib/localdb/db";
 import { AppTopBar } from "@/components/navigation/AppTopBar";
 import { AIAssistantPanel } from "@/components/ai/AIAssistantPanel";
+import { ScreenReaderPanel } from "@/components/accessibility/ScreenReaderPanel";
 
 export default async function AppLayout({
   children,
@@ -32,6 +33,7 @@ export default async function AppLayout({
         />
         {children}
         <AIAssistantPanel />
+        <ScreenReaderPanel />
       </div>
     );
   }
@@ -68,6 +70,7 @@ export default async function AppLayout({
       />
       {children}
       <AIAssistantPanel />
+      <ScreenReaderPanel />
     </div>
   );
 }
