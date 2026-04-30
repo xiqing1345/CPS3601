@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import { CATEGORIES, encodeCustomCategory } from "@/types/domain";
 import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
 import { withMinDelay } from "@/lib/ui/withMinDelay";
-import { isLocalModeClient } from "@/lib/localdb/mode";
 
 export default function NewProposalPage() {
   const params = useParams<{ roomId: string }>();
@@ -54,11 +53,7 @@ export default function NewProposalPage() {
       return;
     }
 
-    if (isLocalModeClient()) {
-      router.push(`/app/room/${roomId}/chat?proposalCreated=1`);
-    } else {
-      router.push(`/app/room/${roomId}/proposals/${result.proposalId}`);
-    }
+    router.push(`/app/room/${roomId}/chat?proposalCreated=1`);
     router.refresh();
   }
 
