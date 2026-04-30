@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { CATEGORIES } from "@/types/domain";
 import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
 import { withMinDelay } from "@/lib/ui/withMinDelay";
 
-export default function NewProposalPage({ params }: { params: { roomId: string } }) {
-  const { roomId } = params;
+export default function NewProposalPage() {
+  const params = useParams<{ roomId: string }>();
+  const roomId = typeof params?.roomId === "string" ? params.roomId : "";
   const router = useRouter();
   const [category, setCategory] = useState<(typeof CATEGORIES)[number]>("rules");
   const [title, setTitle] = useState("");
@@ -18,6 +19,12 @@ export default function NewProposalPage({ params }: { params: { roomId: string }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
+    if (!roomId) {
+      setError("Room context is missing. Please reopen this page from the room chat.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
