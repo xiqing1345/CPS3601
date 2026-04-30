@@ -4,12 +4,8 @@ import { useState } from "react";
 
 type Msg = { role: "user" | "assistant"; text: string };
 
-function collectVisibleTextSnapshot(maxChars = 6000) {
+function collectVisibleTextSnapshot(maxChars = 7000) {
   const selectors = [
-    "main",
-    "section",
-    "article",
-    "aside",
     "h1",
     "h2",
     "h3",
@@ -19,13 +15,31 @@ function collectVisibleTextSnapshot(maxChars = 6000) {
     "a",
     "button",
     "label",
-    "span",
-    "div",
+    "input",
+    "textarea",
+    "[role='button']",
   ].join(",");
 
   const nodes = Array.from(document.querySelectorAll<HTMLElement>(selectors));
   const lines: string[] = [];
   const seen = new Set<string>();
+
+  const pushLine = (line: string) => {
+    if (!line) return;
+    if (seen.has(line)) return;
+    seen.add(line);
+    lines.push(line);
+  };
+
+  const pageTitle = document.title?.trim() || "Untitled page";
+  const path = `${window.location.pathname}${window.location.search}`;
+  const selectedText = (window.getSelection()?.toString() || "").replace(/\s+/g, " ").trim();
+
+  pushLine(`# Page title: ${pageTitle}`);
+  pushLine(`# Path: ${path}`);
+  if (selectedText) {
+    pushLine(`# User selected text: ${selectedText}`);
+  }
 
   for (const el of nodes) {
     const style = window.getComputedStyle(el);
@@ -40,25 +54,30 @@ function collectVisibleTextSnapshot(maxChars = 6000) {
       && rect.right >= 0
       && rect.top <= window.innerHeight
       && rect.left <= window.innerWidth;
-
     if (!isVisible) {
       continue;
     }
 
-    const text = (el.innerText || "").replace(/\s+/g, " ").trim();
-    if (!text || text.length < 3) {
+    const tag = el.tagName.toLowerCase();
+    let text = "";
+
+    if (tag === "input" || tag === "textarea") {
+      const input = el as HTMLInputElement | HTMLTextAreaElement;
+      const value = (input.value || "").trim();
+      const placeholder = (input.placeholder || "").trim();
+      text = value || placeholder;
+    } else {
+      text = (el.innerText || "").replace(/\s+/g, " ").trim();
+    }
+
+    if (!text || text.length < 2) {
       continue;
     }
 
-    if (seen.has(text)) {
-      continue;
-    }
+    const line = `[${tag}] ${text}`;
+    pushLine(line);
 
-    seen.add(text);
-    lines.push(text);
-
-    const currentLength = lines.join("\n").length;
-    if (currentLength >= maxChars) {
+    if (lines.join("\n").length >= maxChars) {
       break;
     }
   }
@@ -70,6 +89,7 @@ export function AIAssistantPanel() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [lastSnapshotSize, setLastSnapshotSize] = useState(0);
   const [messages, setMessages] = useState<Msg[]>([
     {
       role: "assistant",
@@ -82,6 +102,7 @@ export function AIAssistantPanel() {
     if (!text || loading) return;
 
     const screenText = collectVisibleTextSnapshot();
+    setLastSnapshotSize(screenText.length);
 
     setMessages((prev) => [...prev, { role: "user", text }]);
     setInput("");
@@ -152,6 +173,9 @@ export function AIAssistantPanel() {
               {loading ? "..." : "Send"}
             </button>
           </div>
+          <p className="mt-1 text-[11px] text-slate-500">
+            {`Screen-read context ready (${lastSnapshotSize} chars captured on last send).`}
+          </p>
           <p className="mt-2 text-[11px] text-slate-500">Reads visible on-screen text as context.</p>
         </section>
       ) : (
