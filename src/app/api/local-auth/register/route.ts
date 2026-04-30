@@ -3,6 +3,15 @@ import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { getLocalDb } from "@/lib/localdb/db";
 
+function setCookie(response: NextResponse, name: string, value: string) {
+  response.cookies.set(name, value, {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 7,
+  });
+}
+
 function makeInviteCode() {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
 }
@@ -50,8 +59,18 @@ export async function POST(request: Request) {
   ).run(userId, email, displayName, passwordHash, now);
 
   let roomId: string | null = null;
+  let roomName = "";
+  let dormName = "";
+  let roomInviteCode = "";
+  let roomRole: "admin" | "member" = "member";
   if (hasInviteCode) {
     roomId = invitedRoom?.id ?? null;
+    const invitedRoomDetails = db
+      .prepare("select room_name, dorm_name, invite_code from rooms where id = ?")
+      .get(roomId) as { room_name: string; dorm_name: string; invite_code: string } | undefined;
+    roomName = invitedRoomDetails?.room_name ?? "";
+    dormName = invitedRoomDetails?.dorm_name ?? "";
+    roomInviteCode = invitedRoomDetails?.invite_code ?? inviteCode;
     db.prepare(
       "insert or ignore into room_members (id, room_id, user_id, role, joined_at) values (?, ?, ?, ?, ?)",
     ).run(randomUUID(), roomId, userId, "member", now);
@@ -68,6 +87,9 @@ export async function POST(request: Request) {
     }
 
     roomId = randomUUID();
+    roomName = roomNumber;
+    roomInviteCode = generatedCode;
+    roomRole = "admin";
     db.prepare(
       "insert into rooms (id, room_name, dorm_name, invite_code, created_by, created_at) values (?, ?, ?, ?, ?, ?)",
     ).run(roomId, roomNumber, "", generatedCode, userId, now);
@@ -78,18 +100,18 @@ export async function POST(request: Request) {
   }
 
   const response = NextResponse.json({ ok: true, userId, roomId });
-  response.cookies.set("local_user_id", userId, {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7,
-  });
-  response.cookies.set("local_user_email", email, {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7,
-  });
+  setCookie(response, "local_user_id", userId);
+  setCookie(response, "local_user_email", email);
+  if (roomId) {
+    const roomBootstrap = JSON.stringify({
+      roomId,
+      roomName,
+      dormName,
+      inviteCode: roomInviteCode,
+      role: roomRole,
+    });
+    setCookie(response, "local_room_bootstrap", roomBootstrap);
+  }
 
   return response;
 }
