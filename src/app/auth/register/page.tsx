@@ -7,6 +7,30 @@ import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
 import { withMinDelay } from "@/lib/ui/withMinDelay";
 import { isLocalModeClient } from "@/lib/localdb/mode";
 
+function setValidationMessage(event: React.FormEvent<HTMLInputElement>, message: string) {
+  const input = event.currentTarget;
+  if (input.validity.valueMissing) {
+    input.setCustomValidity(message);
+    return;
+  }
+
+  if (input.validity.typeMismatch) {
+    input.setCustomValidity("Please enter a valid email address.");
+    return;
+  }
+
+  if (input.validity.tooShort) {
+    input.setCustomValidity(`Please enter at least ${input.minLength} characters.`);
+    return;
+  }
+
+  input.setCustomValidity("");
+}
+
+function clearValidationMessage(event: React.FormEvent<HTMLInputElement>) {
+  event.currentTarget.setCustomValidity("");
+}
+
 export default function RegisterPage() {
   const isLocal = isLocalModeClient();
   const [email, setEmail] = useState("");
@@ -90,6 +114,8 @@ export default function RegisterPage() {
             type="text"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
+            onInvalid={(e) => setValidationMessage(e, "Please enter your display name.")}
+            onInput={clearValidationMessage}
             required
           />
         </label>
@@ -101,6 +127,8 @@ export default function RegisterPage() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            onInvalid={(e) => setValidationMessage(e, "Please enter your email address.")}
+            onInput={clearValidationMessage}
             required
           />
         </label>
@@ -113,6 +141,8 @@ export default function RegisterPage() {
             minLength={6}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            onInvalid={(e) => setValidationMessage(e, "Please enter a password.")}
+            onInput={clearValidationMessage}
             required
           />
         </label>
@@ -147,8 +177,15 @@ export default function RegisterPage() {
                   type="text"
                   value={inviteCode}
                   onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                  onInvalid={(e) => setValidationMessage(e, "Please enter an invite code.")}
+                  onInput={clearValidationMessage}
                   required
                 />
+                <p className="mt-2 text-xs leading-5 text-slate-500">
+                  The invite code is created automatically when your roommate sets up a dorm room. If a roommate has
+                  already created the room, ask them to open the room chat page and check the invite code shown below
+                  the room name.
+                </p>
               </label>
             ) : (
               <label className="mt-2 block text-sm">
@@ -159,6 +196,8 @@ export default function RegisterPage() {
                   value={roomNumber}
                   onChange={(e) => setRoomNumber(e.target.value)}
                   placeholder="e.g. 402"
+                  onInvalid={(e) => setValidationMessage(e, "Please enter your room number.")}
+                  onInput={clearValidationMessage}
                   required
                 />
               </label>
