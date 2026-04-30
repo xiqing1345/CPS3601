@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ChatMessageSection } from "@/components/chat/ChatMessageSection";
+import { RecentProposalsPanel } from "@/components/proposals/RecentProposalsPanel";
 import { isLocalMode } from "@/lib/localdb/mode";
 import { getLocalSessionUser } from "@/lib/localdb/session";
 import { getLocalDb } from "@/lib/localdb/db";
@@ -113,21 +114,16 @@ export default async function ChatPage({
           />
         </section>
 
-        <aside className="campus-paper-card space-y-4 rounded-xl p-4">
-          <h2 className="campus-heading text-lg font-semibold">Recent Proposals</h2>
-          <div className="space-y-3">
-            {proposals.map((p) => (
-              <article key={p.id} className="rounded-lg border border-slate-200 bg-white p-3">
-                <h3 className="text-sm font-medium">{p.title}</h3>
-                <p className="mt-1 text-xs text-slate-600">{p.description}</p>
-                <p className="mt-2 text-xs">Status: <span className="font-medium">{p.status}</span></p>
-                <Link className="mt-2 inline-block text-xs text-sky-800 underline" href={`/app/room/${roomId}/proposals/${p.id}`}>
-                  View details
-                </Link>
-              </article>
-            ))}
-          </div>
-        </aside>
+        <RecentProposalsPanel
+          roomId={roomId}
+          initialProposals={proposals.map((p) => ({
+            id: p.id,
+            title: p.title,
+            description: p.description,
+            status: p.status,
+            createdAt: p.created_at,
+          }))}
+        />
 
         <aside className="campus-paper-card space-y-4 rounded-xl p-4">
           <h2 className="campus-heading text-lg font-semibold">System Notifications</h2>
@@ -243,21 +239,16 @@ export default async function ChatPage({
         />
       </section>
 
-      <aside className="campus-paper-card space-y-4 rounded-xl p-4">
-        <h2 className="campus-heading text-lg font-semibold">Recent Proposals</h2>
-        <div className="space-y-3">
-          {(proposals ?? []).map((p) => (
-            <article key={p.id} className="rounded-lg border border-slate-200 bg-white p-3">
-              <h3 className="text-sm font-medium">{p.title}</h3>
-              <p className="mt-1 text-xs text-slate-600">{p.description}</p>
-              <p className="mt-2 text-xs">Status: <span className="font-medium">{p.status}</span></p>
-              <Link className="mt-2 inline-block text-xs text-sky-800 underline" href={`/app/room/${roomId}/proposals/${p.id}`}>
-                View details
-              </Link>
-            </article>
-          ))}
-        </div>
-      </aside>
+      <RecentProposalsPanel
+        roomId={roomId}
+        initialProposals={(proposals ?? []).map((p) => ({
+          id: p.id,
+          title: p.title,
+          description: p.description,
+          status: p.status,
+          createdAt: p.created_at,
+        }))}
+      />
 
       <aside className="campus-paper-card space-y-4 rounded-xl p-4">
         <h2 className="campus-heading text-lg font-semibold">System Notifications</h2>

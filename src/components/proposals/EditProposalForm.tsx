@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { CATEGORIES, decodeCustomCategoryLabel, encodeCustomCategory, isBuiltInCategory } from "@/types/domain";
 import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
 import { withMinDelay } from "@/lib/ui/withMinDelay";
+import { saveOrUpdateCachedProposal } from "@/components/proposals/localProposalCache";
 
 type Props = {
   roomId: string;
@@ -62,6 +63,14 @@ export function EditProposalForm({
       setError(result.error ?? "Update proposal failed");
       return;
     }
+
+    saveOrUpdateCachedProposal(roomId, {
+      id: proposalId,
+      title: title.trim(),
+      description: description.trim(),
+      status: "pending",
+      createdAt: new Date().toISOString(),
+    });
 
     setSuccess("Submitted successfully.");
 

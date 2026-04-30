@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { CATEGORIES, encodeCustomCategory } from "@/types/domain";
 import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
 import { withMinDelay } from "@/lib/ui/withMinDelay";
+import { saveOrUpdateCachedProposal } from "@/components/proposals/localProposalCache";
 
 export default function NewProposalPage() {
   const params = useParams<{ roomId: string }>();
@@ -52,6 +53,14 @@ export default function NewProposalPage() {
       setError(result.error ?? "Create proposal failed");
       return;
     }
+
+    saveOrUpdateCachedProposal(roomId, {
+      id: String(result.proposalId),
+      title: title.trim(),
+      description: description.trim(),
+      status: "pending",
+      createdAt: new Date().toISOString(),
+    });
 
     router.push(`/app/room/${roomId}/chat?proposalCreated=1`);
     router.refresh();
