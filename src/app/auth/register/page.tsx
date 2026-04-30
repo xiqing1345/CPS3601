@@ -55,11 +55,7 @@ export default function RegisterPage() {
         return;
       }
 
-      if (result.roomId) {
-        router.replace(`/app/room/${result.roomId}/chat`);
-      } else {
-        router.replace("/app");
-      }
+      router.replace("/app");
       router.refresh();
       return;
     } else {

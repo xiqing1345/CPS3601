@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { MessageComposer } from "@/components/chat/MessageComposer";
+import { getCachedProposals } from "@/components/proposals/localProposalCache";
 
 type ChatMessage = {
   id: string;
@@ -23,6 +24,21 @@ type Props = {
 
 export function ChatMessageSection({ roomId, currentUserName, initialMessages, proposalOptions }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
+
+  const mergedProposalOptions = useMemo(() => {
+    const byId = new Map<string, { id: string; title: string }>();
+    for (const proposal of proposalOptions) {
+      byId.set(proposal.id, proposal);
+    }
+
+    for (const cached of getCachedProposals(roomId)) {
+      if (!byId.has(cached.id)) {
+        byId.set(cached.id, { id: cached.id, title: cached.title });
+      }
+    }
+
+    return Array.from(byId.values());
+  }, [roomId, proposalOptions]);
 
   function handleMessageSent(message: {
     content: string;
@@ -73,7 +89,7 @@ export function ChatMessageSection({ roomId, currentUserName, initialMessages, p
 
       <MessageComposer
         roomId={roomId}
-        proposalOptions={proposalOptions}
+        proposalOptions={mergedProposalOptions}
         onMessageSent={handleMessageSent}
         autoRefresh={false}
       />
