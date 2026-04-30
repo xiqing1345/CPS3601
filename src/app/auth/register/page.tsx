@@ -2,14 +2,12 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
 import { withMinDelay } from "@/lib/ui/withMinDelay";
 import { isLocalModeClient } from "@/lib/localdb/mode";
 
 export default function RegisterPage() {
-  const router = useRouter();
   const isLocal = isLocalModeClient();
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -55,8 +53,7 @@ export default function RegisterPage() {
         return;
       }
 
-      router.replace("/app");
-      router.refresh();
+      window.location.replace("/app");
       return;
     } else {
       const supabase = createClient();
@@ -76,8 +73,7 @@ export default function RegisterPage() {
       }
     }
 
-    router.replace("/app");
-    router.refresh();
+    window.location.replace("/app");
   }
 
   return (

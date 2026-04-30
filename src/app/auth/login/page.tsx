@@ -2,14 +2,12 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
 import { withMinDelay } from "@/lib/ui/withMinDelay";
 import { isLocalModeClient } from "@/lib/localdb/mode";
 
 export default function LoginPage() {
-  const router = useRouter();
   const isLocal = isLocalModeClient();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -43,8 +41,7 @@ export default function LoginPage() {
       }
     }
 
-    router.replace("/app");
-    router.refresh();
+    window.location.replace("/app");
   }
 
   return (
