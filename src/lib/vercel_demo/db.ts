@@ -177,13 +177,6 @@ function ensureDemoSeed(database: Database.Database) {
   insertMember.run(randomUUID(), roomId, users[1].id, "member", ts(-88));
   insertMember.run(randomUUID(), roomId, users[2].id, "member", ts(-87));
 
-  const existingUsers = database
-    .prepare("select id from users")
-    .all() as Array<{ id: string }>;
-  for (const u of existingUsers) {
-    insertMember.run(randomUUID(), roomId, u.id, "member", ts(-5));
-  }
-
   const activeProposal = database
     .prepare("select id from proposals where room_id = ? and title = ?")
     .get(roomId, "Weekly Chore Rotation") as { id: string } | undefined;
