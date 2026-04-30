@@ -41,9 +41,10 @@ export default async function ChatPage({
 
     const messages = db
       .prepare(
-        `select m.id, m.content, m.message_type, m.created_at, m.proposal_id, u.display_name as sender_name
+        `select m.id, m.content, m.message_type, m.created_at, m.proposal_id, p.title as proposal_title, u.display_name as sender_name
          from messages m
          left join users u on u.id = m.sender_id
+         left join proposals p on p.id = m.proposal_id
          where m.room_id = ?
          order by m.created_at asc
          limit 120`,
@@ -54,6 +55,7 @@ export default async function ChatPage({
       message_type: string;
       created_at: string;
       proposal_id: string | null;
+      proposal_title: string | null;
       sender_name: string | null;
     }>;
 
@@ -108,6 +110,7 @@ export default async function ChatPage({
               messageType: m.message_type,
               createdAt: m.created_at,
               proposalId: m.proposal_id,
+              proposalTitle: m.proposal_title,
               senderName: m.sender_name ?? "Unknown",
             }))}
             proposalOptions={proposals.map((p) => ({ id: p.id, title: p.title }))}
@@ -174,7 +177,7 @@ export default async function ChatPage({
     supabase.from("rooms").select("room_name,dorm_name,invite_code").eq("id", roomId).maybeSingle(),
     supabase
       .from("messages")
-      .select("id,content,message_type,created_at,proposal_id,sender:profiles(display_name)")
+      .select("id,content,message_type,created_at,proposal_id,proposal:proposals(title),sender:profiles(display_name)")
       .eq("room_id", roomId)
       .order("created_at", { ascending: true })
       .limit(120),
@@ -233,6 +236,7 @@ export default async function ChatPage({
             messageType: m.message_type,
             createdAt: m.created_at,
             proposalId: m.proposal_id,
+            proposalTitle: ((m.proposal as { title?: string } | null)?.title ?? null),
             senderName: (m.sender as { display_name?: string } | null)?.display_name ?? "Unknown",
           }))}
           proposalOptions={(proposals ?? []).map((p) => ({ id: p.id, title: p.title }))}

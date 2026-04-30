@@ -10,6 +10,7 @@ type ChatMessage = {
   messageType: string;
   createdAt: string;
   proposalId: string | null;
+  proposalTitle: string | null;
   senderName: string;
 };
 
@@ -23,7 +24,12 @@ type Props = {
 export function ChatMessageSection({ roomId, currentUserName, initialMessages, proposalOptions }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
 
-  function handleMessageSent(message: { content: string; messageType: "user" | "image"; proposalId: string | null }) {
+  function handleMessageSent(message: {
+    content: string;
+    messageType: "user" | "image";
+    proposalId: string | null;
+    proposalTitle: string | null;
+  }) {
     setMessages((previous) => [
       ...previous,
       {
@@ -32,6 +38,7 @@ export function ChatMessageSection({ roomId, currentUserName, initialMessages, p
         messageType: message.messageType,
         createdAt: new Date().toISOString(),
         proposalId: message.proposalId,
+        proposalTitle: message.proposalTitle,
         senderName: currentUserName,
       },
     ]);
@@ -56,7 +63,7 @@ export function ChatMessageSection({ roomId, currentUserName, initialMessages, p
             )}
             {m.proposalId && (
               <Link className="mt-2 inline-block text-xs text-sky-800 underline" href={`/app/room/${roomId}/proposals/${m.proposalId}`}>
-                Open linked proposal
+                Open linked proposal{m.proposalTitle ? `: ${m.proposalTitle}` : ""}
               </Link>
             )}
             <p className="mt-2 text-xs text-slate-500">{new Date(m.createdAt).toLocaleString()}</p>

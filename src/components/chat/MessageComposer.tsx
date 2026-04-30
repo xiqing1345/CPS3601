@@ -8,7 +8,12 @@ import { withMinDelay } from "@/lib/ui/withMinDelay";
 type Props = {
   roomId: string;
   proposalOptions: Array<{ id: string; title: string }>;
-  onMessageSent?: (message: { content: string; messageType: "user" | "image"; proposalId: string | null }) => void;
+  onMessageSent?: (message: {
+    content: string;
+    messageType: "user" | "image";
+    proposalId: string | null;
+    proposalTitle: string | null;
+  }) => void;
   autoRefresh?: boolean;
 };
 
@@ -91,7 +96,13 @@ export function MessageComposer({ roomId, proposalOptions, onMessageSent, autoRe
         return;
       }
 
-      onMessageSent?.({ content: url, messageType: "image", proposalId: linkedProposalId || null });
+      const linkedTitle = proposalOptions.find((proposal) => proposal.id === linkedProposalId)?.title ?? null;
+      onMessageSent?.({
+        content: url,
+        messageType: "image",
+        proposalId: linkedProposalId || null,
+        proposalTitle: linkedTitle,
+      });
       clearImage();
       if (autoRefresh) {
         router.refresh();
@@ -122,7 +133,13 @@ export function MessageComposer({ roomId, proposalOptions, onMessageSent, autoRe
       return;
     }
 
-    onMessageSent?.({ content: text, messageType: "user", proposalId: linkedProposalId || null });
+    const linkedTitle = proposalOptions.find((proposal) => proposal.id === linkedProposalId)?.title ?? null;
+    onMessageSent?.({
+      content: text,
+      messageType: "user",
+      proposalId: linkedProposalId || null,
+      proposalTitle: linkedTitle,
+    });
     setContent("");
     if (autoRefresh) {
       router.refresh();

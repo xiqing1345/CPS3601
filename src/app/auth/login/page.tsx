@@ -43,7 +43,7 @@ export default function LoginPage() {
       }
     }
 
-    router.push("/app");
+    router.replace("/app");
     router.refresh();
   }
 
