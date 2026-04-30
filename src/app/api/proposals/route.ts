@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { CATEGORIES } from "@/types/domain";
+import { isValidProposalCategory } from "@/types/domain";
 import { isLocalMode } from "@/lib/localdb/mode";
 import { getLocalDb } from "@/lib/localdb/db";
 import { getLocalSessionUser } from "@/lib/localdb/session";
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     const description = String(body.description ?? "").trim();
     const fullDetails = String(body.fullDetails ?? "").trim();
 
-    if (!roomId || !title || !description || !fullDetails || !CATEGORIES.includes(category as (typeof CATEGORIES)[number])) {
+    if (!roomId || !title || !description || !fullDetails || !isValidProposalCategory(category)) {
       return NextResponse.json({ error: "Invalid proposal payload" }, { status: 400 });
     }
 
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
   const description = String(body.description ?? "").trim();
   const fullDetails = String(body.fullDetails ?? "").trim();
 
-  if (!roomId || !title || !description || !fullDetails || !CATEGORIES.includes(category as (typeof CATEGORIES)[number])) {
+  if (!roomId || !title || !description || !fullDetails || !isValidProposalCategory(category)) {
     return NextResponse.json({ error: "Invalid proposal payload" }, { status: 400 });
   }
 

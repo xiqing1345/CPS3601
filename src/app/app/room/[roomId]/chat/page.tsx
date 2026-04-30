@@ -10,8 +10,15 @@ function normalizeMessageContent(content: string) {
   return content.replace(/^(System|[A-Za-z][A-Za-z0-9_-]{1,24}):\s+/, "");
 }
 
-export default async function ChatPage({ params }: { params: Promise<{ roomId: string }> }) {
+export default async function ChatPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ roomId: string }>;
+  searchParams: Promise<{ proposalCreated?: string }>;
+}) {
   const { roomId } = await params;
+  const { proposalCreated } = await searchParams;
 
   if (isLocalMode()) {
     const user = await getLocalSessionUser();
@@ -68,6 +75,11 @@ export default async function ChatPage({ params }: { params: Promise<{ roomId: s
     return (
       <main className="mx-auto grid min-h-screen w-full max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[2fr_1fr_1fr]">
         <section className="campus-card rounded-xl p-4">
+          {proposalCreated === "1" && (
+            <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+              Proposal created successfully.
+            </div>
+          )}
           <header className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
             <div>
               <h1 className="campus-heading text-2xl font-semibold">{room?.dorm_name} · {room?.room_name}</h1>
@@ -193,6 +205,11 @@ export default async function ChatPage({ params }: { params: Promise<{ roomId: s
   return (
     <main className="mx-auto grid min-h-screen w-full max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[2fr_1fr_1fr]">
       <section className="campus-card rounded-xl p-4">
+        {proposalCreated === "1" && (
+          <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+            Proposal created successfully.
+          </div>
+        )}
         <header className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
           <div>
             <h1 className="campus-heading text-2xl font-semibold">{room?.dorm_name} · {room?.room_name}</h1>

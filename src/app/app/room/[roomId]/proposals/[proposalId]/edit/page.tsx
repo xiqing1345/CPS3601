@@ -4,7 +4,6 @@ import { isLocalMode } from "@/lib/localdb/mode";
 import { getLocalSessionUser } from "@/lib/localdb/session";
 import { getLocalDb } from "@/lib/localdb/db";
 import { EditProposalForm } from "@/components/proposals/EditProposalForm";
-import type { Category } from "@/types/domain";
 
 export default async function EditProposalPage({
   params,
@@ -29,7 +28,7 @@ export default async function EditProposalPage({
           id: string;
           room_id: string;
           proposer_id: string;
-          category: Category;
+          category: string;
           title: string;
           description: string;
           full_details: string;
@@ -77,7 +76,7 @@ export default async function EditProposalPage({
     <EditProposalForm
       roomId={roomId}
       proposalId={proposalId}
-      initialCategory={proposal.category as Category}
+      initialCategory={proposal.category}
       initialTitle={proposal.title}
       initialDescription={proposal.description}
       initialFullDetails={proposal.full_details}

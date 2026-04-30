@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isLocalMode } from "@/lib/localdb/mode";
 import { getLocalDb } from "@/lib/localdb/db";
 import { getLocalSessionUser } from "@/lib/localdb/session";
+import { formatProposalCategory } from "@/types/domain";
 
 export default async function AgreementsPage({ params }: { params: Promise<{ roomId: string }> }) {
   const { roomId } = await params;
@@ -53,7 +54,7 @@ export default async function AgreementsPage({ params }: { params: Promise<{ roo
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
           {agreements.map((ag) => (
             <article key={ag.id} className="campus-paper-card rounded-xl p-4">
-              <p className="text-xs uppercase tracking-wide text-slate-500">{ag.category}</p>
+              <p className="text-xs uppercase tracking-wide text-slate-500">{formatProposalCategory(ag.category)}</p>
               <h2 className="campus-heading mt-1 text-lg font-semibold">{ag.title}</h2>
               <p className="mt-2 whitespace-pre-wrap text-sm text-slate-700">{ag.details}</p>
               <div className="mt-4 space-y-1 text-xs text-slate-600">
@@ -90,7 +91,7 @@ export default async function AgreementsPage({ params }: { params: Promise<{ roo
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         {(agreements ?? []).map((ag) => (
           <article key={ag.id} className="campus-paper-card rounded-xl p-4">
-            <p className="text-xs uppercase tracking-wide text-slate-500">{ag.category}</p>
+            <p className="text-xs uppercase tracking-wide text-slate-500">{formatProposalCategory(ag.category)}</p>
             <h2 className="campus-heading mt-1 text-lg font-semibold">{ag.title}</h2>
             <p className="mt-2 whitespace-pre-wrap text-sm text-slate-700">{ag.details}</p>
             <div className="mt-4 space-y-1 text-xs text-slate-600">

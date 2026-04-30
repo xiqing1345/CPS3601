@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CATEGORIES, type Category } from "@/types/domain";
+import { CATEGORIES, decodeCustomCategoryLabel, encodeCustomCategory, isBuiltInCategory } from "@/types/domain";
 import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
 import { withMinDelay } from "@/lib/ui/withMinDelay";
 
 type Props = {
   roomId: string;
   proposalId: string;
-  initialCategory: Category;
+  initialCategory: string;
   initialTitle: string;
   initialDescription: string;
   initialFullDetails: string;
@@ -24,7 +24,8 @@ export function EditProposalForm({
   initialFullDetails,
 }: Props) {
   const router = useRouter();
-  const [category, setCategory] = useState<Category>(initialCategory);
+  const [category, setCategory] = useState<string>(isBuiltInCategory(initialCategory) ? initialCategory : "custom");
+  const [customCategory, setCustomCategory] = useState<string>(decodeCustomCategoryLabel(initialCategory));
   const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState(initialDescription);
   const [fullDetails, setFullDetails] = useState(initialFullDetails);
@@ -38,10 +39,20 @@ export function EditProposalForm({
     setError(null);
     setSuccess(null);
 
+    const resolvedCategory = category === "custom"
+      ? encodeCustomCategory(customCategory)
+      : category;
+
+    if (!resolvedCategory) {
+      setLoading(false);
+      setError("Please enter a custom category name.");
+      return;
+    }
+
     const res = await withMinDelay(fetch(`/api/proposals/${proposalId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ category, title, description, fullDetails }),
+      body: JSON.stringify({ category: resolvedCategory, title, description, fullDetails }),
     }));
 
     const result = await res.json();
@@ -68,13 +79,27 @@ export function EditProposalForm({
           <select
             className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2"
             value={category}
-            onChange={(e) => setCategory(e.target.value as Category)}
+            onChange={(e) => setCategory(e.target.value)}
           >
             {CATEGORIES.map((item) => (
               <option key={item} value={item}>{item}</option>
             ))}
+            <option value="custom">custom</option>
           </select>
         </label>
+
+        {category === "custom" && (
+          <label className="block text-sm">
+            Custom category name
+            <input
+              className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2"
+              value={customCategory}
+              onChange={(e) => setCustomCategory(e.target.value)}
+              placeholder="e.g. study_time"
+              required
+            />
+          </label>
+        )}
 
         <label className="block text-sm">
           Title

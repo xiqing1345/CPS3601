@@ -5,6 +5,7 @@ import { ProposalVotingSection } from "@/components/proposals/ProposalVotingSect
 import { isLocalMode } from "@/lib/localdb/mode";
 import { getLocalSessionUser } from "@/lib/localdb/session";
 import { getLocalDb } from "@/lib/localdb/db";
+import { formatProposalCategory } from "@/types/domain";
 
 export default async function ProposalDetailPage({
   params,
@@ -107,7 +108,7 @@ export default async function ProposalDetailPage({
         </div>
 
         <section className="campus-paper-card mt-4 rounded-xl p-6">
-          <p className="text-xs uppercase tracking-wide text-slate-500">{proposal.category}</p>
+          <p className="text-xs uppercase tracking-wide text-slate-500">{formatProposalCategory(proposal.category)}</p>
           <h1 className="campus-heading mt-1 text-2xl font-semibold">{proposal.title}</h1>
           <p className="mt-2 text-sm text-slate-700">{proposal.description}</p>
           <p className="mt-3 whitespace-pre-wrap rounded-md border border-slate-200 bg-white p-3 text-sm">{proposal.full_details}</p>
@@ -140,7 +141,7 @@ export default async function ProposalDetailPage({
                 <article key={item.id} className="rounded-md border border-slate-200 bg-white p-3 text-sm">
                   <p className="font-medium">Edited by {item.editor_name ?? "Member"} at {new Date(item.edited_at).toLocaleString()}</p>
                   <p className="mt-1 text-slate-700">Previous title: {item.previous_title}</p>
-                  <p className="text-slate-600">Previous category: {item.previous_category}</p>
+                  <p className="text-slate-600">Previous category: {formatProposalCategory(item.previous_category)}</p>
                   <p className="mt-1 text-slate-600">{item.previous_description}</p>
                 </article>
               ))}
@@ -213,7 +214,7 @@ export default async function ProposalDetailPage({
       </div>
 
       <section className="campus-paper-card mt-4 rounded-xl p-6">
-        <p className="text-xs uppercase tracking-wide text-slate-500">{proposal.category}</p>
+        <p className="text-xs uppercase tracking-wide text-slate-500">{formatProposalCategory(proposal.category)}</p>
         <h1 className="campus-heading mt-1 text-2xl font-semibold">{proposal.title}</h1>
         <p className="mt-2 text-sm text-slate-700">{proposal.description}</p>
         <p className="mt-3 whitespace-pre-wrap rounded-md border border-slate-200 bg-white p-3 text-sm">{proposal.full_details}</p>
@@ -246,7 +247,7 @@ export default async function ProposalDetailPage({
               <article key={item.id} className="rounded-md border border-slate-200 bg-white p-3 text-sm">
                 <p className="font-medium">Edited by {(item.editor as { display_name?: string } | null)?.display_name ?? "Member"} at {new Date(item.edited_at).toLocaleString()}</p>
                 <p className="mt-1 text-slate-700">Previous title: {item.previous_title}</p>
-                <p className="text-slate-600">Previous category: {item.previous_category}</p>
+                <p className="text-slate-600">Previous category: {formatProposalCategory(item.previous_category)}</p>
                 <p className="mt-1 text-slate-600">{item.previous_description}</p>
               </article>
             ))}

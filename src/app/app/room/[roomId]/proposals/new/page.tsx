@@ -2,15 +2,17 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { CATEGORIES } from "@/types/domain";
+import { CATEGORIES, encodeCustomCategory } from "@/types/domain";
 import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
 import { withMinDelay } from "@/lib/ui/withMinDelay";
+import { isLocalModeClient } from "@/lib/localdb/mode";
 
 export default function NewProposalPage() {
   const params = useParams<{ roomId: string }>();
   const roomId = typeof params?.roomId === "string" ? params.roomId : "";
   const router = useRouter();
-  const [category, setCategory] = useState<(typeof CATEGORIES)[number]>("rules");
+  const [category, setCategory] = useState<string>("rules");
+  const [customCategory, setCustomCategory] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [fullDetails, setFullDetails] = useState("");
@@ -28,10 +30,20 @@ export default function NewProposalPage() {
     setLoading(true);
     setError(null);
 
+    const resolvedCategory = category === "custom"
+      ? encodeCustomCategory(customCategory)
+      : category;
+
+    if (!resolvedCategory) {
+      setLoading(false);
+      setError("Please enter a custom category name.");
+      return;
+    }
+
     const res = await withMinDelay(fetch("/api/proposals", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ roomId, category, title, description, fullDetails }),
+      body: JSON.stringify({ roomId, category: resolvedCategory, title, description, fullDetails }),
     }));
 
     const result = await res.json();
@@ -42,7 +54,11 @@ export default function NewProposalPage() {
       return;
     }
 
-    router.push(`/app/room/${roomId}/proposals/${result.proposalId}`);
+    if (isLocalModeClient()) {
+      router.push(`/app/room/${roomId}/chat?proposalCreated=1`);
+    } else {
+      router.push(`/app/room/${roomId}/proposals/${result.proposalId}`);
+    }
     router.refresh();
   }
 
@@ -56,13 +72,27 @@ export default function NewProposalPage() {
           <select
             className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2"
             value={category}
-            onChange={(e) => setCategory(e.target.value as (typeof CATEGORIES)[number])}
+            onChange={(e) => setCategory(e.target.value)}
           >
             {CATEGORIES.map((item) => (
               <option key={item} value={item}>{item}</option>
             ))}
+            <option value="custom">custom</option>
           </select>
         </label>
+
+        {category === "custom" && (
+          <label className="block text-sm">
+            Custom category name
+            <input
+              className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2"
+              value={customCategory}
+              onChange={(e) => setCustomCategory(e.target.value)}
+              placeholder="e.g. study_time"
+              required
+            />
+          </label>
+        )}
 
         <label className="block text-sm">
           Title
